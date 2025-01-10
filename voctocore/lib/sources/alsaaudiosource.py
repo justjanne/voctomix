@@ -32,9 +32,7 @@ class AlsaAudioSource(AVSource):
         )
 
     def build_audioport(self):
-        return """alsasrc
-                    name=alsaaudiosrc-{name}
-                    device={device}
+        return """fallbacksrc name=alsaaudiosrc-{name} source="alsasrc device={device}"
                   ! audioconvert
                   ! audioresample
                 """.format(
