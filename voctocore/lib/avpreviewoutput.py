@@ -31,7 +31,8 @@ class AVPreviewOutput(TCPMultiConnection):
                     video-{source}.
                     ! {vcaps}
                     ! queue
-                        max-size-time=3000000000
+                        leaky=downstream
+                        max-size-time=1000000000
                         name=queue-preview-video-{source}
                     {vpipeline}
                     ! queue
@@ -47,8 +48,9 @@ class AVPreviewOutput(TCPMultiConnection):
         if use_audio_mix or source in Config.getAudioSources(internal=True):
             self.bin += """
                     {use_audio}audio-{audio_source}{audio_blinded}.
-                    ! queue
-                        max-size-time=3000000000
+                    ! queue   
+                        leaky=downstream 
+                        max-size-time=1000000000
                         name=queue-preview-audio-{source}
                     ! audioconvert
                     ! queue
@@ -73,8 +75,10 @@ class AVPreviewOutput(TCPMultiConnection):
                 ! multifdsink
                     blocksize=1048576
                     buffers-max=500
+                    recover-policy=keyframe
                     sync-method=next-keyframe
                     name=fd-preview-{source}
+                    sync=false
                 """.format(source=self.source)
 
         # close bin

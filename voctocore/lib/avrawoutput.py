@@ -29,8 +29,9 @@ class AVRawOutput(TCPMultiConnection):
             self.bin += """
                     video-{source}.
                     ! {vcaps}
-                    ! queue
-                        max-size-time=3000000000
+                    ! queue   
+                        leaky=downstream 
+                        max-size-time=1000000000
                         name=queue-mux-video-{source}
                     ! mux-{source}.
                     """.format(source=self.source,
@@ -40,8 +41,9 @@ class AVRawOutput(TCPMultiConnection):
         if use_audio_mix or source in Config.getAudioSources(internal=True):
             self.bin += """
                 {use_audio}audio-{audio_source}{audio_blinded}.
-                ! queue
-                    max-size-time=3000000000
+                    ! queue   
+                        leaky=downstream 
+                        max-size-time=1000000000
                     name=queue-audio-mix-convert-{source}
                 ! audioconvert
                 ! queue
@@ -68,7 +70,9 @@ class AVRawOutput(TCPMultiConnection):
                     blocksize=1048576
                     buffers-max={buffers_max}
                     sync-method=next-keyframe
+                    recover-policy=keyframe
                     name=fd-{source}
+                    sync=false
                 """.format(
             buffers_max=Config.getOutputBuffers(self.source),
             source=self.source
