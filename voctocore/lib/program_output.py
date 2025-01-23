@@ -53,7 +53,7 @@ class ProgramOutputSink:
                     max-size-time=3000000000
                     name=queue-mux-audio-{source}
                 ! audioresample
-                ! {audiosink}
+                ! {audiosink} sync=false
                 """.format(
                 source=self.source,
                 use_audio="" if use_audio_mix else "source-",

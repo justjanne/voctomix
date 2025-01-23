@@ -77,6 +77,7 @@ class AVPreviewOutput(TCPMultiConnection):
                     buffers-max=500
                     sync-method=next-keyframe
                     name=fd-preview-{source}
+                    sync=false
                 """.format(source=self.source)
 
         # close bin

@@ -71,6 +71,7 @@ class AVRawOutput(TCPMultiConnection):
                     buffers-max={buffers_max}
                     sync-method=next-keyframe
                     name=fd-{source}
+                    sync=false
                 """.format(
             buffers_max=Config.getOutputBuffers(self.source),
             source=self.source
