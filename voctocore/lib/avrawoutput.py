@@ -70,6 +70,7 @@ class AVRawOutput(TCPMultiConnection):
                     blocksize=1048576
                     buffers-max={buffers_max}
                     sync-method=next-keyframe
+                    recover-policy=keyframe
                     name=fd-{source}
                     sync=false
                 """.format(

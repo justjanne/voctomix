@@ -35,6 +35,8 @@ class AlsaAudioSource(AVSource):
         return """alsasrc
                     name=alsaaudiosrc-{name}
                     device={device}
+                    buffer-time=5000
+                    slave-method=3
                   ! audioconvert
                   ! audioresample
                 """.format(

@@ -75,6 +75,7 @@ class AVPreviewOutput(TCPMultiConnection):
                 ! multifdsink
                     blocksize=1048576
                     buffers-max=500
+                    recover-policy=keyframe
                     sync-method=next-keyframe
                     name=fd-preview-{source}
                     sync=false
