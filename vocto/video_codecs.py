@@ -19,7 +19,7 @@ if Gst.version() < (1, 8):
     }
 else:
     vaapi_encoders = {
-        'h264': 'vaapih264enc keyframe-period=1',
+        'h264': 'vaapih264enc keyframe-period={rate}',
         'jpeg': 'vaapijpegenc',
         'mpeg2': 'vaapimpeg2enc',
     }
@@ -58,10 +58,18 @@ cpu_decoders = {
 }
 
 
+def get_framerate(caps: str) -> int:
+    caps: Gst.Structure = Gst.Caps.from_string(caps).get_structure(0)
+    (_, numerator, denominator) = caps.get_fraction('framerate')
+    framerate = int(float(numerator) / float(denominator))
+    return framerate
+
+
 def construct_video_encoder_pipeline(section):
     encoder = Config.getVideoEncoder(section)
     codec, options = Config.getVideoCodec(section)
     vcaps = Config.getVideoCaps(section)
+    framerate = get_framerate(vcaps)
 
     pipeline = ""
 
@@ -75,7 +83,7 @@ def construct_video_encoder_pipeline(section):
                             caps=video/x-raw,interlace-mode=progressive
                         ! vaapipostproc
                         ! {encoder}
-                        """.format(encoder=vaapi_encoders[codec])
+                        """.format(encoder=vaapi_encoders[codec].format(rate=framerate))
 
     elif encoder == 'v4l2':
         if codec not in v4l2_encoders:
