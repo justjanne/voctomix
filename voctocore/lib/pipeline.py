@@ -175,7 +175,7 @@ class Pipeline(object):
         for bin in self.bins:
             bin.attach(self.pipeline)
 
-        self.pipeline.use_clock(Clock)
+        self.pipeline.set_clock(Clock)
 
         # fetch all queues
         self.queues = self.fetch_elements_by_name(r'^queue-[\w_-]+$')
