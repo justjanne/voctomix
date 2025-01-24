@@ -63,3 +63,6 @@ target/
 # IDE project files
 /*.iml
 /.idea
+
+/core.pipeline.dot
+/core.pipeline.txt
