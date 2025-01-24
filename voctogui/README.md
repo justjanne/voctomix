@@ -39,7 +39,7 @@ The GUI new front-end for **VOC2CORE**.
 The **VOC2GUI** is a GUI client for **VOC2CORE**.
 It can connect to a running **VOC2CORE** host and then uses *GTK* to provide a graphical interface to control a lot of the core's functionality.
 
-![**VOC2GUI** Screenshot](doc/images/voc2gui.png)
+![**VOC2GUI** Screenshot](../doc/gui/voc2gui.png)
 
 Since the focus of VOC2MIX is to process and control the video mixing of a single A/V recorded talk on stage, **VOC2GUI** is the part where A/V mixing operators can get an easy to use interface to do their job while the event is running.
 
