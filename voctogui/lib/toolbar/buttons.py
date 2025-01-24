@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from gi.repository import Gtk
 import sys
 from voctogui.lib.toolbar.widgets import _decode, Widgets

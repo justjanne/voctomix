@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # for debug logging
 import logging
 from vocto.composites import Composite, Composites, swap_name

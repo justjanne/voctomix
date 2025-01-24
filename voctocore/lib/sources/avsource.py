@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import logging
 from abc import ABCMeta, abstractmethod
 from gi.repository import GLib

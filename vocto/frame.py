@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # for debug logging
 import logging
 # for cloning objects

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 from gi.repository import Gst, GstController
 import logging
 import gi

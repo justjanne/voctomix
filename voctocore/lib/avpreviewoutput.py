@@ -1,5 +1,4 @@
 import logging
-#!/usr/bin/env python3
 from vocto.video_codecs import construct_video_encoder_pipeline
 
 from voctocore.lib.tcpmulticonnection import TCPMultiConnection
