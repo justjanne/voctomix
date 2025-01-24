@@ -1,13 +1,23 @@
 import logging
+from socket import socket
 
+from gi.repository import Gst
+
+from vocto.pipeline_element import PipelineTerminal
 from voctocore.lib.args import Args
 from voctocore.lib.config import Config
-from voctocore.lib.tcpmulticonnection import TCPMultiConnection
+from voctocore.lib.outputs.tcpmulticonnection import TCPMultiConnection, ClientStatusType
 
 
-class AVRawOutput(TCPMultiConnection):
+class AVRawOutput(TCPMultiConnection, PipelineTerminal):
+    log: logging.Logger
 
-    def __init__(self, source, port, use_audio_mix=False, audio_blinded=False):
+    source: str
+    bin: str
+
+    pipeline: Gst.Pipeline
+
+    def __init__(self, source: str, port: int, use_audio_mix: bool = False, audio_blinded: bool = False):
         # create logging interface
         self.log = logging.getLogger('AVRawOutput[{}]'.format(source))
 
@@ -88,14 +98,14 @@ class AVRawOutput(TCPMultiConnection):
     def __str__(self):
         return 'AVRawOutput[{}]'.format(self.source)
 
-    def attach(self, pipeline):
+    def attach(self, pipeline: Gst.Pipeline):
         self.pipeline = pipeline
 
-    def on_accepted(self, conn, addr):
+    def on_accepted(self, conn: socket, addr):
         self.log.debug('Adding fd %u to multifdsink', conn.fileno())
 
         # find fdsink and emit 'add'
-        fdsink = self.pipeline.get_by_name("fd-{}".format(self.source))
+        fdsink: Gst.Element = self.pipeline.get_by_name("fd-{}".format(self.source))
         fdsink.emit('add', conn.fileno())
 
         # catch disconnect
@@ -103,12 +113,13 @@ class AVRawOutput(TCPMultiConnection):
             if fileno == conn.fileno():
                 self.log.debug('fd %u removed from multifdsink', fileno)
                 self.close_connection(conn)
+
         fdsink.connect('client-fd-removed', on_client_fd_removed)
 
         # catch client-removed
         def on_client_removed(multifdsink, fileno, status):
-            # GST_CLIENT_STATUS_SLOW = 3,
-            if fileno == conn.fileno() and status == 3:
+            if fileno == conn.fileno() and status == ClientStatusType.GST_CLIENT_STATUS_SLOW:
                 self.log.warning('about to remove fd %u from multifdsink '
                                  'because it is too slow!', fileno)
+
         fdsink.connect('client-removed', on_client_removed)

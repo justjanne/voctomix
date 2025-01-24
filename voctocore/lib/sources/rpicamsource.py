@@ -26,7 +26,7 @@ class RPICamAVSource(AVSource):
 
         self.build_pipeline()
 
-    def port(self):
+    def port(self) -> str:
         return "RPICam device {}".format(self.device)
 
     def attach(self, pipeline):
@@ -35,10 +35,10 @@ class RPICamAVSource(AVSource):
             'rpicamvideosrc-{}'.format(self.name))
         GLib.timeout_add(self.timer_resolution * 1000, self.do_timeout)
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         return 1 if self.signalPad and self.signalPad.get_property('signal') else 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'RPICamAVSource[{name}] reading device {device}'.format(
             name=self.name,
             device=self.device

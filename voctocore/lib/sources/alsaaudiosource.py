@@ -1,16 +1,15 @@
-import logging
-
-from configparser import NoOptionError
-from gi.repository import Gst
+from typing import Optional
 
 from voctocore.lib.config import Config
 from voctocore.lib.sources.avsource import AVSource
 
 
 class AlsaAudioSource(AVSource):
+    device: str
+    name: str
 
-    def __init__(self, name, has_audio=True, has_video=False,
-                 force_num_streams=None):
+    def __init__(self, name: str, has_audio: bool = True, has_video: bool = False,
+                 force_num_streams: Optional[int] = None):
         super().__init__('AlsaAudioSource', name, has_audio, has_video,
                          force_num_streams)
         self.device = Config.getAlsaAudioDevice(name)
@@ -18,13 +17,13 @@ class AlsaAudioSource(AVSource):
 
         self.build_pipeline()
 
-    def port(self):
+    def port(self) -> str:
         return "AlsaAudio {}".format(self.device)
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         return 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'AlsaAudioSource[{name}] ({device})'.format(
             name=self.name,
             device=self.device

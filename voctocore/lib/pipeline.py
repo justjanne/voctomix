@@ -3,27 +3,29 @@ import re
 import sys
 
 from gi.repository import Gst
-# import library components
+
+from vocto.debug import gst_generate_dot
+from vocto.pipeline_element import PipelineElement
+from vocto.port import Port, Ports
+from vocto.pretty import pretty
 from voctocore.lib.args import Args
 from voctocore.lib.audiomix import AudioMix
-from voctocore.lib.avpreviewoutput import AVPreviewOutput
-from voctocore.lib.avrawoutput import AVRawOutput
 from voctocore.lib.blinder import Blinder
 from voctocore.lib.clock import Clock
 from voctocore.lib.config import Config
-from voctocore.lib.local_recording import LocalRecordingSink
-from voctocore.lib.program_output import ProgramOutputSink
+from voctocore.lib.outputs.avpreviewoutput import AVPreviewOutput
+from voctocore.lib.outputs.avrawoutput import AVRawOutput
+from voctocore.lib.outputs.program_output import ProgramOutputSink
 from voctocore.lib.sources import spawn_source
-from voctocore.lib.srtserver import SRTServerSink
 from voctocore.lib.videomix import VideoMix
-
-from vocto.debug import gst_generate_dot
-from vocto.port import Port
-from vocto.pretty import pretty
 
 
 class Pipeline(object):
     """mixing, streaming and encoding pipeline constuction and control"""
+    log: logging.Logger
+    bin: list[PipelineElement]
+    ports: list[Port]
+    queues: list[Gst.Element]
 
     def __init__(self):
         self.log = logging.getLogger('Pipeline')
@@ -44,22 +46,25 @@ class Pipeline(object):
         self.log.info('Creating %u AVSources: %s', len(sources), sources)
         for idx, source_name in enumerate(sources):
             # count port and create source
-            source = spawn_source(source_name, Port.SOURCES_IN + idx)
+            source = spawn_source(source_name, Ports.SOURCES_IN + idx)
             self.bins.append(source)
             self.ports.append(Port(source_name, source))
 
             if Config.getMirrorsEnabled():
                 if source_name in Config.getMirrorsSources():
-                    dest = AVRawOutput(source_name, Port.SOURCES_OUT + idx)
+                    dest = AVRawOutput(source_name, Ports.SOURCES_OUT + idx)
                     self.bins.append(dest)
                     self.ports.append(Port(source_name, dest))
 
             # check for source preview selection
             if Config.getPreviewsEnabled():
                 # count preview port and create source
-                dest = AVPreviewOutput(source_name, Port.SOURCES_PREVIEW + idx)
+                dest = AVPreviewOutput(source_name, Ports.SOURCES_PREVIEW + idx)
                 self.bins.append(dest)
                 self.ports.append(Port("preview-%s" % source_name, dest))
+
+        # initialize audio streams
+        Config.getAudioStreams()
 
         # create audio mixer
         self.log.info('Creating Audiomixer')
@@ -74,25 +79,25 @@ class Pipeline(object):
         for idx, background in enumerate(Config.getBackgroundSources()):
             # create background source
             source = spawn_source(
-                background, Port.SOURCES_BACKGROUND+idx, has_audio=False)
+                background, Ports.SOURCES_BACKGROUND + idx, has_audio=False)
             self.bins.append(source)
             self.ports.append(Port(background, source))
 
         # create mix TCP output
         if Config.getAVRawOutputEnabled():
-            dest = AVRawOutput('mix', Port.MIX_OUT, use_audio_mix=True)
+            dest = AVRawOutput('mix', Ports.MIX_OUT, use_audio_mix=True)
             self.bins.append(dest)
             self.ports.append(Port('mix', dest))
 
         # add localui
         if Config.getProgramOutputEnabled():
-            pgmout = ProgramOutputSink("mix", Port.MIX_OUT, use_audio_mix=True)
+            pgmout = ProgramOutputSink("mix", Ports.MIX_OUT, use_audio_mix=True)
             self.bins.append(pgmout)
             self.ports.append(Port('mix', pgmout))
 
         # create mix preview TCP output
         if Config.getPreviewsEnabled():
-            dest = AVPreviewOutput('mix', Port.MIX_PREVIEW, use_audio_mix=True)
+            dest = AVPreviewOutput('mix', Ports.MIX_PREVIEW, use_audio_mix=True)
             self.bins.append(dest)
             self.ports.append(Port('preview-mix', dest))
 
@@ -104,21 +109,18 @@ class Pipeline(object):
                                    'be configured or the '
                                    'Blinder disabled!')
             if Config.isBlinderDefault():
-                source = spawn_source('blinder',
-                                      Port.SOURCES_BLANK)
+                source = spawn_source('blinder', Ports.SOURCES_BLANK)
                 self.bins.append(source)
                 self.ports.append(Port('blinder', source))
             else:
                 for idx, source_name in enumerate(sources):
                     source = spawn_source(source_name,
-                                          Port.SOURCES_BLANK + idx,
+                                          Ports.SOURCES_BLANK + idx,
                                           has_audio=False)
                     self.bins.append(source)
                     self.ports.append(Port('blinded-{}'.format(source_name), source))
 
-                source = spawn_source('blinder',
-                                      Port.AUDIO_SOURCE_BLANK,
-                                      has_video=False)
+                source = spawn_source('blinder', Ports.AUDIO_SOURCE_BLANK, has_video=False)
                 self.bins.append(source)
                 self.ports.append(Port('blinder-audio', source))
 
@@ -129,27 +131,28 @@ class Pipeline(object):
             # check for source preview selection
             if Config.getPreviewsEnabled():
                 for idx, livepreview in enumerate(Config.getLivePreviews()):
-                    dest = AVPreviewOutput('{}-blinded'.format(livepreview), Port.LIVE_PREVIEW+idx, use_audio_mix=True, audio_blinded=True)
+                    dest = AVPreviewOutput('{}-blinded'.format(livepreview), Ports.LIVE_PREVIEW + idx,
+                                           use_audio_mix=True, audio_blinded=True)
                     self.bins.append(dest)
                     self.ports.append(Port('preview-{}-blinded'.format(livepreview), dest))
 
             for idx, livesource in enumerate(Config.getLiveSources()):
-                dest = AVRawOutput('{}-blinded'.format(livesource), Port.LIVE_OUT + idx, use_audio_mix=True, audio_blinded=True )
+                dest = AVRawOutput('{}-blinded'.format(livesource), Ports.LIVE_OUT + idx, use_audio_mix=True,
+                                   audio_blinded=True)
                 self.bins.append(dest)
                 self.ports.append(Port('{}-blinded'.format(livesource), dest))
 
         # TODO test after 2.0 is released
-        #if Config.getLocalRecordingEnabled():
-        #    playout = LocalRecordingSink('mix', Port.LOCALPLAYOUT_OUT, use_audio_mix=True, audio_blinded=True)
+        # if Config.getLocalRecordingEnabled():
+        #    playout = LocalRecordingSink('mix', Ports.LOCALPLAYOUT_OUT, use_audio_mix=True, audio_blinded=True)
         #    self.bins.append(playout)
         #    self.ports.append(Port('{}-playout'.format("mix"), playout))
 
         # TODO test after 2.0 is released
-        #if Config.getSRTServerEnabled():
-        #    playout = SRTServerSink('mix', Port.LOCALPLAYOUT_OUT, use_audio_mix=True, audio_blinded=True)
+        # if Config.getSRTServerEnabled():
+        #    playout = SRTServerSink('mix', Ports.LOCALPLAYOUT_OUT, use_audio_mix=True, audio_blinded=True)
         #    self.bins.append(playout)
         #    self.ports.append(Port('{}-playout'.format("mix"), playout))
-
 
         for _bin in self.bins:
             self.log.info("%s\n%s", _bin, pretty(_bin.bin))
@@ -158,7 +161,7 @@ class Pipeline(object):
         pipeline = "\n\n".join(bin.bin for bin in self.bins)
 
         if Args.pipeline:
-            with open("core.pipeline.txt","w") as file:
+            with open("core.pipeline.txt", "w") as file:
                 file.write(pretty(pipeline))
 
         self.prevstate = None
@@ -183,40 +186,40 @@ class Pipeline(object):
         self.pipeline.bus.add_signal_watch()
         self.pipeline.bus.connect("message::eos", self.on_eos)
         self.pipeline.bus.connect("message::error", self.on_error)
-        self.pipeline.bus.connect(
-            "message::state-changed", self.on_state_changed)
+        self.pipeline.bus.connect("message::state-changed", self.on_state_changed)
 
         self.pipeline.set_state(Gst.State.PLAYING)
 
-    def fetch_elements_by_name(self, regex):
+    def fetch_elements_by_name(self, regex: str):
         # fetch all watchdogs
         result = []
 
         def query(element):
             if re.match(regex, element.get_name()):
                 result.append(element)
+
         self.pipeline.iterate_recurse().foreach(query)
         return result
 
-    def on_eos(self, bus, message):
+    def on_eos(self, bus, message: Gst.Message):
         self.log.debug('Received End-of-Stream-Signal on Source-Pipeline')
 
-    def on_error(self, bus, message):
-        (error, debug) = message.parse_error()
+    def on_error(self, bus, message: Gst.Message):
+        error, debug = message.parse_error()
         self.log.debug(debug)
         self.log.error("GStreamer pipeline element '%s' signaled an error #%u: %s" % (message.src.name, error.code, error.message) )
         sys.exit(-1)
 
-    def on_state_changed(self, bus, message):
+    def on_state_changed(self, bus, message: Gst.Message):
         newstate = message.parse_state_changed().newstate
         states = ["PENDING", "NULL", "READY", "PAUSED", "PLAYING"]
-        self.log.debug("element state changed to '%s' by element '%s'", states[newstate], message.src.name )
+        self.log.debug("element state changed to '%s' by element '%s'", states[newstate], message.src.name)
         if self.prevstate != newstate and message.src.name == "pipeline0":
             self.prevstate = newstate
-            self.log.debug("pipeline state changed to '%s'", states[newstate] )
+            self.log.debug("pipeline state changed to '%s'", states[newstate])
             if newstate == Gst.State.PLAYING:
-                self.log.info("\n\n====================== UP AND RUNNING =====================\n" )
+                self.log.info("\n\n====================== UP AND RUNNING =====================\n")
 
             if Args.dot or Args.gst_debug_details:
                 # make DOT file from pipeline
-                gst_generate_dot(Args, self.pipeline, "core.pipeline")
+                gst_generate_dot(self.pipeline, "core.pipeline", int(Args.gst_debug_details))

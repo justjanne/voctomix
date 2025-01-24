@@ -1,15 +1,22 @@
 import re
 import logging
+from dataclasses import dataclass
 
-log = logging.getLogger('AudioStreams')
+log: logging.Logger = logging.getLogger('AudioStreams')
 
 
-class AudioStreams(list):
+@dataclass
+class AudioStream:
+    source: str
+    channel: int
+    name: str
+    source_channel: int
 
+class AudioStreams(list[AudioStream]):
     def __init__(self):
         super().__init__()
 
-    def configure_source(self, cfg, source, use_source_as_name=False):
+    def configure_source(self, cfg: list[tuple[str, str]], source: str, use_source_as_name: bool=False):
         """
         create an instance of <AudioStreams> for <source> that gets configured by INI section <cfg>
         If <use_source_as_name> is True items will be named as <source>.
@@ -30,7 +37,7 @@ class AudioStreams(list):
                         log.error("input audio stream name '%s' can't be addressed a second time within source '%s'",
                                   name, source)
                     else:
-                        audiostreams.append(AudioStream(source, i, name, channel))
+                        audiostreams.append(AudioStream(source, int(i), name, int(channel)))
         self.extend(audiostreams)
 
     @staticmethod
@@ -41,21 +48,21 @@ class AudioStreams(list):
                 channels.append(entry)
         return channels
 
-    def has_stream(self, name, channel=None):
+    def has_stream(self, name: str, channel=None) -> bool:
         for s in self:
             if s.name == name:
                 if channel is None or s.channel == int(channel):
                     return True
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         result = ""
         for index, audio_stream in enumerate(self):
             result += "mix.%d: %s.%d = %s.%d\n" % (
                 index, audio_stream.name, audio_stream.channel, audio_stream.source, audio_stream.source_channel)
         return result
 
-    def source_channels(self, source):
+    def source_channels(self, source: str) -> list[int]:
         """
         Return all audio channels by source.
         :param source:
@@ -64,7 +71,7 @@ class AudioStreams(list):
         # collect source's channels into a set and count them
         return [audio_stream.source_channel for audio_stream in self if audio_stream.source == source]
 
-    def num_channels(self, source, grid=[x for x in range(0, 255)]):
+    def num_channels(self, source: str, grid: list[int]=list(range(0, 255))) -> int:
         """
         Return the number of different audio channels overall or by source.
             Filter by <source> if given.
@@ -81,7 +88,7 @@ class AudioStreams(list):
             result += 1
         return result
 
-    def matrix(self, source, stream=None, out_channels=None, grid=[x for x in range(0, 255)]):
+    def matrix(self, source: str, stream: str=None, out_channels: int = None, grid: list[int]=list(range(0, 255))) -> list[list[float]]:
         """
         Return matrix that maps in to out channels of <source>.
             Filter by <stream> if given.
@@ -95,14 +102,14 @@ class AudioStreams(list):
         :return:
         """
         # collect result rows
-        result = []
+        result: list[list[float]] = []
         for out, audio_stream in enumerate(self):
             row = []
             # build result row based on number of channels in that source
             for ch in range(0, self.num_channels(source, grid)):
                 # map source channels to out channels
                 row.append(1.0 if audio_stream.source == source and audio_stream.source_channel == ch and (
-                        stream is None or stream == audio_stream.name) else 0.0)
+                    stream is None or stream == audio_stream.name) else 0.0)
             result.append(row)
         # if out channels are given
         if out_channels:
@@ -115,7 +122,7 @@ class AudioStreams(list):
                            self.num_channels(source, grid)] * (out_channels - len(result))
         return result
 
-    def get_source_streams(self, source):
+    def get_source_streams(self, source: str) -> dict[str, list[AudioStream]]:
         """
         filter all stream channels of given <source>
         :param source:
@@ -129,7 +136,7 @@ class AudioStreams(list):
                 result[audio_stream.name].append(audio_stream)
         return result
 
-    def get_stream_names(self, source=None):
+    def get_stream_names(self, source: str=None) -> list[str]:
         """
         Get names of all streams.
             Filter by <source> if given.
@@ -143,7 +150,7 @@ class AudioStreams(list):
                     result.append(audio_stream.name)
         return result
 
-    def get_stream_source(self, source=None):
+    def get_stream_source(self, source: str=None) -> list[str]:
         """
         Get sources of all streams.
                     Filter by <source> if given.
@@ -156,18 +163,3 @@ class AudioStreams(list):
                 if audio_stream.name not in result:
                     result.append(audio_stream.source)
         return result
-
-
-class AudioStream:
-    def __init__(self, source, channel, name, source_channel):
-        """
-        initialize stream data
-        :param source:
-        :param channel:
-        :param name:
-        :param source_channel:
-        """
-        self.source = source
-        self.channel = int(channel)
-        self.name = name
-        self.source_channel = int(source_channel)

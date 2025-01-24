@@ -1,15 +1,27 @@
 import logging
 import re
+from typing import Optional
+
+from gi.repository import Gst
 
 from voctocore.lib.config import Config
 from voctocore.lib.sources.avsource import AVSource
 
 
 class DeckLinkAVSource(AVSource):
+    device: int
+    aconn: str
+    vconn: str
+    vmode: str
+    vfmt: str
+    name: str
 
-    timer_resolution = 0.5
+    signalPad: Optional[Gst.Element]
+    pipeline: Gst.Pipeline
 
-    def __init__(self, name, has_audio=True, has_video=True):
+    timer_resolution: float = 0.5
+
+    def __init__(self, name: str, has_audio: bool=True, has_video: bool=True):
         super().__init__('DecklinkAVSource', name, has_audio, has_video, show_no_signal=True)
 
         self.device = Config.getDeckLinkDeviceNumber(name)
@@ -22,7 +34,7 @@ class DeckLinkAVSource(AVSource):
         self.signalPad = None
         self.build_pipeline()
 
-    def port(self):
+    def port(self) -> str:
         return "Decklink #{}".format(self.device)
 
     def attach(self, pipeline):
@@ -30,19 +42,19 @@ class DeckLinkAVSource(AVSource):
         self.signalPad = pipeline.get_by_name(
             'decklinkvideosrc-{}'.format(self.name))
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         return 1 if self.signalPad and self.signalPad.get_property('signal') else 0
 
-    def get_valid_channel_numbers(self):
-        return (2, 8, 16)
+    def get_valid_channel_numbers(self) -> list[int]:
+        return [2, 8, 16]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'DecklinkAVSource[{name}] reading card #{device}'.format(
             name=self.name,
             device=self.device
         )
 
-    def build_source(self):
+    def build_source(self) -> str:
         # A video source is required even when we only need audio
         pipe = """
             decklinkvideosrc
@@ -94,11 +106,11 @@ class DeckLinkAVSource(AVSource):
 
         return pipe
 
-    def build_audioport(self):
+    def build_audioport(self) -> str:
         return 'decklinkaudiosrc-{name}.'.format(name=self.name)
 
-    def build_videoport(self):
+    def build_videoport(self) -> str:
         return 'vout-{}.'.format(self.name)
 
-    def get_nosignal_text(self):
+    def get_nosignal_text(self) -> str:
         return super().get_nosignal_text() + "/BM%d" % self.device

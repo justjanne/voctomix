@@ -1,10 +1,13 @@
-def quote(str):
-    ''' encode spaces and comma '''
-    return None if not str else str.replace('\\', '\\\\').replace(' ','\\s').replace('|','\\v').replace(',','\\c').replace('\n','\\n')
+from typing import Optional
 
-def dequote(str):
-    ''' decode spaces and comma '''
-    return None if not str else str.replace('\\n','\n').replace('\\c', ',').replace('\\v', '|').replace('\\s', ' ').replace('\\\\', '\\')
 
-def str2bool(str):
-    return str.lower() in [ 'true', 'yes', 'visible', 'show', '1' ]
+def quote(value: str) -> Optional[str]:
+    """ encode spaces and comma """
+    return None if not value else value.replace('\\', '\\\\').replace(' ','\\s').replace('|','\\v').replace(',','\\c').replace('\n','\\n')
+
+def dequote(value: str) -> Optional[str]:
+    """ decode spaces and comma """
+    return None if not value else value.replace('\\n','\n').replace('\\c', ',').replace('\\v', '|').replace('\\s', ' ').replace('\\\\', '\\')
+
+def str2bool(value: str) -> bool:
+    return value.lower() in [ 'true', 'yes', 'visible', 'show', '1' ]

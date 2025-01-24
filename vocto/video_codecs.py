@@ -1,12 +1,15 @@
 import logging
-import gi
 import sys
 
 from gi.repository import Gst
 
-gi.require_version('GstController', '1.0')
+from vocto.config import VocConfigParser
 
-log = logging.getLogger('video_codecs')
+log: logging.Logger = logging.getLogger('video_codecs')
+
+vaapi_encoders: dict[str, str]
+cpu_encoders: dict[str, str]
+v4l2_encoders: dict[str, str]
 
 # https://blogs.igalia.com/vjaquez/2016/04/06/gstreamer-vaapi-1-8-the-codec-split/
 if Gst.version() < (1, 8):
@@ -33,6 +36,9 @@ cpu_encoders = {
     'mpeg2': "mpeg2enc"
 }
 
+vaapi_decoders: dict[str, str]
+cpu_decoders: dict[str, str]
+
 if Gst.version() < (1, 8):
     vaapi_decoders = {
         'h264': 'vaapidecode_h264',
@@ -56,7 +62,7 @@ cpu_decoders = {
 }
 
 
-def construct_video_encoder_pipeline(config, section):
+def construct_video_encoder_pipeline(config: VocConfigParser, section: str) -> str:
     encoder = config.getVideoEncoder(section)
     codec, options = config.getVideoCodec(section)
     vcaps = config.getVideoCaps(section)
@@ -115,7 +121,7 @@ def construct_video_encoder_pipeline(config, section):
     return pipeline
 
 
-def construct_video_decoder_pipeline(config, section, videosystem=None):
+def construct_video_decoder_pipeline(config: VocConfigParser, section: str, videosystem: str=None) -> str:
     decoder = config.getVideoDecoder(section)
     codec, options = config.getVideoCodec(section)
     if videosystem == 'vaapi':

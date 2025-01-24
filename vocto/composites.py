@@ -7,61 +7,7 @@ import copy
 # for parsing configuration items
 import re
 
-log = logging.getLogger('Composites')
-
-
-class Composites:
-    """ a namespace for composite related methods
-    """
-
-    def configure(self, cfg, size, add_swap=True):
-        """ read INI like configuration from <cfg> and return all the defined
-            composites. <size> is the overall frame size which all proportional
-            (floating point) coordinates are related to.
-        """
-        # prepare resulting composites dictonary
-        composites = dict()
-        # walk through composites configuration
-        for c_name, c_val in cfg:
-            if '.' not in c_name:
-                raise RuntimeError("syntax error in composite config '{}' "
-                                   "(must be: 'name.attribute')"
-                                   .format(c_name))
-            # split name into name and attribute
-            name, attr = c_name.lower().rsplit('.', 1)
-            if name not in composites:
-                # add  new composite
-                composites[name] = Composite(len(composites), name)
-            try:
-                # set attribute
-                composites[name].config(attr, c_val, size)
-            except RuntimeError as err:
-                raise RuntimeError(
-                    "syntax error in composite config value at '{}':\n{}"
-                    .format(name, err))
-        add_mirrored_composites(composites)
-        if add_swap:
-            # add any useful swapped targets
-            add_swapped_targets(composites)
-        return composites
-
-    def targets(self, composites):
-        """ return a list of all composites that are not intermediate
-        """
-        result = []
-        for c_name, c in composites.items():
-            if not c.inter:
-                result.append(c)
-        return sorted(result, key=lambda c: c.order)
-
-    def intermediates(self, composites):
-        """ return a list of all composites that are intermediate
-        """
-        result = []
-        for c_name, c in composites.items():
-            if c.inter:
-                result.append(c)
-        return sorted(result, key=lambda c: c.order)
+log: logging.Logger =logging.getLogger('Composites')
 
 
 class Composite:
@@ -206,6 +152,61 @@ class Composite:
 
     def both(self):
         return not (single() or covered())
+
+class Composites:
+    """ a namespace for composite related methods
+    """
+
+    @staticmethod
+    def configure(cfg, size, add_swap=True) -> dict[str, Composite]:
+        """ read INI like configuration from <cfg> and return all the defined
+            composites. <size> is the overall frame size which all proportional
+            (floating point) coordinates are related to.
+        """
+        # prepare resulting composites dictonary
+        composites = dict()
+        # walk through composites configuration
+        for c_name, c_val in cfg:
+            if '.' not in c_name:
+                raise RuntimeError("syntax error in composite config '{}' "
+                                   "(must be: 'name.attribute')"
+                                   .format(c_name))
+            # split name into name and attribute
+            name, attr = c_name.lower().rsplit('.', 1)
+            if name not in composites:
+                # add  new composite
+                composites[name] = Composite(len(composites), name)
+            try:
+                # set attribute
+                composites[name].config(attr, c_val, size)
+            except RuntimeError as err:
+                raise RuntimeError(
+                    "syntax error in composite config value at '{}':\n{}"
+                    .format(name, err))
+        add_mirrored_composites(composites)
+        if add_swap:
+            # add any useful swapped targets
+            add_swapped_targets(composites)
+        return composites
+
+    @staticmethod
+    def targets(composites: dict[str, Composite]) -> list[Composite]:
+        """ return a list of all composites that are not intermediate
+        """
+        result = []
+        for c_name, c in composites.items():
+            if not c.inter:
+                result.append(c)
+        return sorted(result, key=lambda c: c.order)
+
+    def intermediates(self, composites: dict[str, Composite]) -> list[Composite]:
+        """ return a list of all composites that are intermediate
+        """
+        result = []
+        for c_name, c in composites.items():
+            if c.inter:
+                result.append(c)
+        return sorted(result, key=lambda c: c.order)
 
 
 def add_swapped_targets(composites):

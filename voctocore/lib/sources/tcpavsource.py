@@ -25,10 +25,10 @@ class TCPAVSource(AVSource):
         self.build_pipeline()
         self.connected = False
 
-    def port(self):
+    def port(self) -> str:
         return"%s:%d" % (socket.gethostname(), self.listen_port)
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         if self.connected:
             return 1
         else:
@@ -57,7 +57,7 @@ class TCPAVSource(AVSource):
 
         self.src = pipeline.get_by_name('src-{name}'.format(name=self.name))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'TCPAVSource[{name}] listening at {listen} ({port})'.format(
             name=self.name,
             listen=self.port(),

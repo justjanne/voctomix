@@ -1,23 +1,24 @@
 import logging
+from typing import Optional
 
-log = logging.getLogger('AVSourceManager')
+from voctocore.lib.config import Config
+from voctocore.lib.sources.alsaaudiosource import AlsaAudioSource
+from voctocore.lib.sources.avsource import AVSource
+from voctocore.lib.sources.decklinkavsource import DeckLinkAVSource
+from voctocore.lib.sources.filesource import FileSource
+from voctocore.lib.sources.imgvsource import ImgVSource
+from voctocore.lib.sources.pulseaudiosource import PulseAudioSource
+from voctocore.lib.sources.rpicamsource import RPICamAVSource
+from voctocore.lib.sources.tcpavsource import TCPAVSource
+from voctocore.lib.sources.testsource import TestSource
+from voctocore.lib.sources.v4l2source import V4l2AVSource
 
-sources = {}
+log: logging.Logger = logging.getLogger('AVSourceManager')
+
+sources: dict[str, AVSource] = {}
 
 
-def spawn_source(name, port, has_audio=True, has_video=True):
-
-    from voctocore.lib.config import Config
-    from voctocore.lib.sources.decklinkavsource import DeckLinkAVSource
-    from voctocore.lib.sources.imgvsource import ImgVSource
-    from voctocore.lib.sources.tcpavsource import TCPAVSource
-    from voctocore.lib.sources.testsource import TestSource
-    from voctocore.lib.sources.filesource import FileSource
-    from voctocore.lib.sources.v4l2source import V4l2AVSource
-    from voctocore.lib.sources.rpicamsource import RPICamAVSource
-    from voctocore.lib.sources.pulseaudiosource import PulseAudioSource
-    from voctocore.lib.sources.alsaaudiosource import AlsaAudioSource
-
+def spawn_source(name: str, port: Optional[int], has_audio=True, has_video=True):
     kind = Config.getSourceKind(name)
 
     if kind == 'img':
@@ -39,7 +40,8 @@ def spawn_source(name, port, has_audio=True, has_video=True):
     else:
         if kind != 'test':
             log.warning(
-                'Unknown value "%s" in attribute "kind" in definition of source %s (see section [source.%s] in configuration). Falling back to kind "test".', kind, name, name)
+                'Unknown value "%s" in attribute "kind" in definition of source %s (see section [source.%s] in configuration). Falling back to kind "test".',
+                kind, name, name)
         sources[name] = TestSource(name, has_audio, has_video)
 
     return sources[name]

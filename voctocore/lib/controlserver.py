@@ -3,11 +3,11 @@ from queue import Empty, Queue
 from threading import Lock
 
 from gi.repository import GObject
+
+from vocto.port import Ports
 from voctocore.lib.commands import ControlServerCommands
 from voctocore.lib.response import NotifyResponse
-from voctocore.lib.tcpmulticonnection import TCPMultiConnection
-
-from vocto.port import Port
+from voctocore.lib.outputs.tcpmulticonnection import TCPMultiConnection
 
 
 class ControlServer(TCPMultiConnection):
@@ -15,7 +15,7 @@ class ControlServer(TCPMultiConnection):
     def __init__(self, pipeline):
         '''Initialize server and start listening.'''
         self.log = logging.getLogger('ControlServer')
-        super().__init__(port=Port.CORE_LISTENING)
+        super().__init__(port=Ports.CORE_LISTENING)
 
         self.command_queue = Queue()
 

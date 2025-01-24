@@ -4,12 +4,12 @@ from gi.repository import Gst
 import gi
 gi.require_version('Gst', '1.0')
 
-log = logging.getLogger('vocto.debug')
+log: logging.Logger =logging.getLogger('vocto.debug')
 
-def gst_generate_dot(args, pipeline, name):
+def gst_generate_dot(pipeline: Gst.Pipeline, name: str, gst_debug_details: int):
     dotfile = os.path.join(os.environ['GST_DEBUG_DUMP_DOT_DIR'], "%s.dot" % name)
     log.debug("Generating DOT image of pipeline '{name}' into '{file}'".format(name=name, file=dotfile))
-    Gst.debug_bin_to_dot_file(pipeline, Gst.DebugGraphDetails(int(args.gst_debug_details)), name)
+    Gst.debug_bin_to_dot_file(pipeline, Gst.DebugGraphDetails(gst_debug_details), name)
 
 
 gst_log_messages_lastmessage = None

@@ -48,7 +48,7 @@ class PortsWindowController():
             # append report as rows to treeview store and remember row iterators
             self.iterators = dict()
             for p in report:
-                port = Port.from_str(p)
+                port = Port.from_dict(p)
                 self.iterators[port.port] = self.store.append((
                     port.name,
                     port.audio,
@@ -60,7 +60,7 @@ class PortsWindowController():
         else:
             # just update values of second column
             for p in report:
-                port = Port.from_str(p)
+                port = Port.from_dict(p)
                 it = self.iterators[port.port]
                 self.store.set_value(it, 0, port.name)
                 self.store.set_value(it, 1, port.audio)

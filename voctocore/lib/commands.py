@@ -293,7 +293,7 @@ class ControlServerCommands(object):
     def report_ports(self):
         for p in self.pipeline.ports:
             p.update()
-        return OkResponse('port_report', json.dumps(self.pipeline.ports, default=lambda x: x.todict()))
+        return OkResponse('port_report', json.dumps(self.pipeline.ports, default=lambda x: x.to_dict()))
 
     # only available when overlays are configured
     if Config.hasOverlay():

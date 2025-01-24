@@ -24,19 +24,19 @@ class FileSource(AVSource):
         self.loop = Config.getLoop(name)
         self.build_pipeline()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'FileSource[{name}] displaying {location}'.format(
             name=self.name,
             location=self.location
         )
 
-    def port(self):
+    def port(self) -> str:
         return os.path.basename(self.location)
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         return 1
 
-    def video_channels(self):
+    def video_channels(self) -> int:
         return 1
 
     def build_source(self):

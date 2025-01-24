@@ -1,32 +1,31 @@
 import logging
-from gi.repository import Gtk, Gdk
 
-from voctogui.lib.config import Config
-from voctogui.lib.uibuilder import UiBuilder
+from gi.repository import Gtk
 
-from voctogui.lib.videodisplay import VideoDisplay
-from voctogui.lib.audioleveldisplay import AudioLevelDisplay
+from vocto.port import Ports
 from voctogui.lib.audiodisplay import AudioDisplay
-from voctogui.lib.videopreviews import VideoPreviewsController
-from voctogui.lib.queues import QueuesWindowController
+from voctogui.lib.audioleveldisplay import AudioLevelDisplay
+from voctogui.lib.config import Config
 from voctogui.lib.ports import PortsWindowController
 from voctogui.lib.presetcontroller import PresetController
-
-from voctogui.lib.toolbar.mix import MixToolbarController
-from voctogui.lib.toolbar.preview import PreviewToolbarController
-from voctogui.lib.toolbar.overlay import OverlayToolbarController
+from voctogui.lib.queues import QueuesWindowController
+from voctogui.lib.studioclock import StudioClock
 from voctogui.lib.toolbar.blinder import BlinderToolbarController
 from voctogui.lib.toolbar.misc import MiscToolbarController
-
-from voctogui.lib.studioclock import StudioClock
-
-from vocto.port import Port
+from voctogui.lib.toolbar.mix import MixToolbarController
+from voctogui.lib.toolbar.overlay import OverlayToolbarController
+from voctogui.lib.toolbar.preview import PreviewToolbarController
+from voctogui.lib.uibuilder import UiBuilder
+from voctogui.lib.videodisplay import VideoDisplay
+from voctogui.lib.videopreviews import VideoPreviewsController
 
 
 class Ui(UiBuilder):
-
     def __init__(self, uifile):
         self.log = logging.getLogger('Ui')
+        # load classes here so the UI can use them
+        class_studioclock = StudioClock
+        class_audioleveldisplay = AudioLevelDisplay
         super().__init__(uifile)
 
     def setup(self):
@@ -67,11 +66,11 @@ class Ui(UiBuilder):
         if Config.getPreviewsEnabled():
             for idx, source in enumerate(Config.getSources()):
                 self.video_previews.addPreview(self, source,
-                                               Port.SOURCES_PREVIEW + idx)
+                                               Ports.SOURCES_PREVIEW + idx)
         elif Config.getMirrorsEnabled():
             for idx, source in enumerate(Config.getMirrorsSources()):
                 self.video_previews.addPreview(
-                    self, source, Port.SOURCES_OUT + idx)
+                    self, source, Ports.SOURCES_OUT + idx)
         else:
             self.log.warning(
                 'Can not show source previews because neither previews nor mirrors are enabled (see previews/enabled and mirrors/enabled in core configuration)')
@@ -82,17 +81,17 @@ class Ui(UiBuilder):
         self.mix_video_display = VideoDisplay(
             self.find_widget_recursive(self.win, 'video_main'),
             self.mix_audio_display,
-            port=Port.MIX_PREVIEW if Config.getPreviewsEnabled() else Port.MIX_OUT,
+            port=Ports.MIX_PREVIEW if Config.getPreviewsEnabled() else Ports.MIX_OUT,
             name="MIX"
         )
 
         for idx, livepreview in enumerate(Config.getLivePreviews()):
             if Config.getPreviewsEnabled():
                 self.video_previews.addPreview(
-                    self, '{}-blinded'.format(livepreview), Port.LIVE_PREVIEW + idx, has_volume=False)
+                    self, '{}-blinded'.format(livepreview), Ports.LIVE_PREVIEW + idx, has_volume=False)
             else:
                 self.video_previews.addPreview(
-                    self, '{}-blinded'.format(livepreview), Port.LIVE_OUT + idx, has_volume=False)
+                    self, '{}-blinded'.format(livepreview), Ports.LIVE_OUT + idx, has_volume=False)
 
         self.preview_toolbar_controller = PreviewToolbarController(
             win=self.win,

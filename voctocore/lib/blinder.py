@@ -1,15 +1,28 @@
 import logging
+from typing import Optional
 
 from gi.repository import Gst
 
+from vocto.pipeline_element import PipelineElement
 from voctocore.lib.config import Config
 from voctocore.lib.clock import Clock
 from voctocore.lib.args import Args
 
 
-class Blinder(object):
+class Blinder(PipelineElement):
     # create logging interface
-    log = logging.getLogger('Blinder')
+    log: logging.Logger = logging.getLogger('Blinder')
+
+    acaps: str
+    vcaps: str
+    volume: float
+
+    blindersources: list[str]
+    livesources: list[str]
+    blind_source: Optional[int]
+
+    bin: str
+    pipeline: Gst.Pipeline
 
     def __init__(self):
 
@@ -101,43 +114,37 @@ class Blinder(object):
 
         self.blind_source = 0 if len(self.blindersources) > 0 else None
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'Blinder'
 
-    def attach(self, pipeline):
+    def attach(self, pipeline: Gst.Pipeline):
         self.pipeline = pipeline
         self.applyMixerState()
 
     def applyMixerState(self):
         for livesource in self.livesources:
-            self.applyMixerStateVideo(
-                'compositor-blinder-{}'.format(livesource))
-            self.applyMixerStateVideo(
-                'compositor-blinder-{}'.format(livesource))
+            self.applyMixerStateVideo('compositor-blinder-{}'.format(livesource))
+            self.applyMixerStateVideo('compositor-blinder-{}'.format(livesource))
         self.applyMixerStateAudio('audiomixer-blinder')
 
-    def applyMixerStateVideo(self, mixername):
+    def applyMixerStateVideo(self, mixername: str):
         mixer = self.pipeline.get_by_name(mixername)
         if not mixer:
             self.log.error("Video mixer '%s' not found", mixername)
         else:
-            mixer.get_static_pad('sink_0').set_property(
-                'alpha', int(self.blind_source is None))
+            mixer.get_static_pad('sink_0').set_property('alpha', int(self.blind_source is None))
             for idx, name in enumerate(self.blindersources):
                 blinder_pad = mixer.get_static_pad('sink_%u' % (idx + 1))
-                blinder_pad.set_property(
-                    'alpha', int(self.blind_source == idx))
+                blinder_pad.set_property('alpha', int(self.blind_source == idx))
 
-    def applyMixerStateAudio(self, mixername):
+    def applyMixerStateAudio(self, mixername: str):
         mixer = self.pipeline.get_by_name(mixername)
         if not mixer:
             self.log.error("Audio mixer '%s' not found", mixername)
         else:
-            mixer.get_static_pad('sink_0').set_property(
-                'volume', 1.0 if self.blind_source is None else 0.0)
-            mixer.get_static_pad('sink_1').set_property(
-                'volume', 0.0 if self.blind_source is None else 1.0)
+            mixer.get_static_pad('sink_0').set_property('volume', 1.0 if self.blind_source is None else 0.0)
+            mixer.get_static_pad('sink_1').set_property('volume', 0.0 if self.blind_source is None else 1.0)
 
-    def setBlindSource(self, source):
+    def setBlindSource(self, source: Optional[int]):
         self.blind_source = source
         self.applyMixerState()

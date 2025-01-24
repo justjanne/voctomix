@@ -1,8 +1,11 @@
 import logging
+from typing import Optional
 
-from configparser import NoOptionError
-from enum import Enum, unique
 import gi
+
+from vocto.composites import Composite
+from vocto.pipeline_element import PipelineElement
+
 gi.require_version('GstController', '1.0')
 from gi.repository import Gst
 from voctocore.lib.config import Config
@@ -14,14 +17,30 @@ from voctocore.lib.args import Args
 from vocto.composite_commands import CompositeCommand
 
 
-class VideoMix(object):
-    log = logging.getLogger('VideoMix')
+class VideoMix(PipelineElement):
+    log: logging.Logger = logging.getLogger('VideoMix')
+
+    bgSources: list[str]
+    sources: list[str]
+    composites: dict[str, Composite]
+    transitions: Transitions
+    scene: Optional[any]
+    bgScene: Optional[any]
+    overlay: Optional[any]
+
+    compositeMode: any
+    sourceA: any
+    sourceB: any
+
+    bin: str
+    pipeline: Gst.Pipeline
 
     def __init__(self):
         # read sources from confg file
         self.bgSources = Config.getBackgroundSources()
         self.sources = Config.getVideoSources()
-        self.log.info('Configuring mixer for %u source(s) and %u background source(s)', len(self.sources), len(self.bgSources))
+        self.log.info('Configuring mixer for %u source(s) and %u background source(s)', len(self.sources),
+                      len(self.bgSources))
 
         # load composites from config
         self.log.info("Reading transitions configuration...")
@@ -32,8 +51,6 @@ class VideoMix(object):
         self.scene = None
         self.bgScene = None
         self.overlay = None
-
-        Config.getAudioStreams()
 
         # build GStreamer mixing pipeline descriptor
         self.bin = "" if Args.no_bins else """
@@ -103,7 +120,7 @@ class VideoMix(object):
         self.bin += "" if Args.no_bins else """)
                     """
 
-    def attach(self, pipeline):
+    def attach(self, pipeline: Gst.Pipeline):
         self.log.debug('Binding Handoff-Handler for '
                        'Synchronus mixer manipulation')
         self.pipeline = pipeline
@@ -117,8 +134,11 @@ class VideoMix(object):
         self.compositeMode = None
         self.sourceA = None
         self.sourceB = None
-        self.setCompositeEx(Composites.targets(self, self.composites)[
-                            0].name, self.sources[0], self.sources[1])
+        self.setCompositeEx(
+            Composites.targets(self.composites)[0].name,
+            self.sources[0],
+            self.sources[1]
+        )
 
         if Config.hasOverlay():
             self.overlay = Overlay(
@@ -129,23 +149,27 @@ class VideoMix(object):
 
     def getPlayTime(self):
         # get play time from mixing pipeline or assume zero
-        return self.pipeline.get_pipeline_clock().get_time() - \
-            self.pipeline.get_base_time()
+        return self.pipeline.get_pipeline_clock().get_time() - self.pipeline.get_base_time()
 
     def on_handoff(self, object, buffer):
         playTime = self.getPlayTime()
         if self.bgScene and self.bgScene.dirty:
             # push background scene to gstreamer
-            self.log.debug('Applying new background at %d ms',
-                           playTime / Gst.MSECOND)
+            self.log.debug('Applying new background at %d ms', playTime / Gst.MSECOND)
             self.bgScene.push(playTime)
         if self.scene and self.scene.dirty:
             # push scene to gstreamer
-            self.log.debug('Applying new mix at %d ms',
-                           playTime / Gst.MSECOND)
+            self.log.debug('Applying new mix at %d ms', playTime / Gst.MSECOND)
             self.scene.push(playTime)
 
-    def setCompositeEx(self, newCompositeName=None, newA=None, newB=None, useTransitions=False, dry=False):
+    def setCompositeEx(
+        self,
+        newCompositeName: Optional[str] = None,
+        newA: Optional[str] = None,
+        newB: Optional[str] = None,
+        useTransitions: bool = False,
+        dry: bool = False
+    ):
         # expect strings or None as parameters
         assert not newCompositeName or type(newCompositeName) == str
         assert not newA or type(newA) == str
@@ -154,8 +178,7 @@ class VideoMix(object):
         # get current composite
         if not self.compositeMode:
             curCompositeName = None
-            self.log.info("Request composite %s(%s,%s)",
-                          newCompositeName, newA, newB)
+            self.log.info("Request composite %s(%s,%s)", newCompositeName, newA, newB)
         else:
             curCompositeName = self.compositeMode
             curA = self.sourceA
@@ -186,13 +209,13 @@ class VideoMix(object):
         # if new scene is complete
         if newComposite and newA in self.sources and newB in self.sources:
             self.log.debug("New composite shall be %s(%s,%s)",
-                          newComposite.name, newA, newB)
+                           newComposite.name, newA, newB)
             # try to find a matching transition from current to new scene
             transition = None
             targetA, targetB = newA, newB
             if useTransitions:
                 if curComposite:
-                    old = (curA,curB,newA,newB)
+                    old = (curA, curB, newA, newB)
 
                     # check if whe have a three-channel scenario
                     if len(set(old)) == 3:
@@ -233,8 +256,9 @@ class VideoMix(object):
                             newB = curA
 
                     # log if whe changed somtehing
-                    if old != (curA,curB,newA,newB):
-                        self.log.info("Changing requested transition from (%s,%s) -> (%s,%s) to (%s,%s) -> (%s,%s)", *old, curA,curB,newA,newB)
+                    if old != (curA, curB, newA, newB):
+                        self.log.info("Changing requested transition from (%s,%s) -> (%s,%s) to (%s,%s) -> (%s,%s)",
+                                      *old, curA, curB, newA, newB)
 
                     swap = False
                     if (curA, curB) == (newA, newB) and curComposite != newComposite:
@@ -280,21 +304,21 @@ class VideoMix(object):
                     # apply found transition
                     self.log.debug("committing background fading to scene")
                     # keep showing old background at z-order 0
-                    curBgFrame = Frame(True, zorder=0, rect=[0,0,*Config.getVideoResolution()])
+                    curBgFrame = Frame(True, zorder=0, rect=[0, 0, *Config.getVideoResolution()])
                     self.bgScene.set(curBgSource, curBgFrame)
                     # fade new background in at z-order 1 so it will cover the old one at end
-                    newBgFrame = Frame(True, alpha=0, zorder=1, rect=[0,0,*Config.getVideoResolution()])
-                    self.bgScene.commit(newBgSource, fade_alpha(newBgFrame,255,transition.frames()))
+                    newBgFrame = Frame(True, alpha=0, zorder=1, rect=[0, 0, *Config.getVideoResolution()])
+                    self.bgScene.commit(newBgSource, fade_alpha(newBgFrame, 255, transition.frames()))
                 else:
                     # apply new scene (hard cut)
                     self.log.debug(
                         "setting new background to scene")
                     # just switch to new background
-                    bgFrame = Frame(True, zorder=0, rect=[0,0,*Config.getVideoResolution()])
+                    bgFrame = Frame(True, zorder=0, rect=[0, 0, *Config.getVideoResolution()])
                     self.bgScene.set(newBgSource, bgFrame)
                 # make all other background sources invisible
                 for source in self.bgSources:
-                    if source not in [curBgSource,newBgSource]:
+                    if source not in [curBgSource, newBgSource]:
                         self.log.debug("making background source %s invisible", source)
                         self.bgScene.set(source, Frame(True, alpha=0, zorder=-1))
         else:
@@ -311,8 +335,8 @@ class VideoMix(object):
         self.sourceA = newA
         self.sourceB = newB
 
-    def setComposite(self, command, useTransitions=False):
-        ''' parse switch to the composite described by string command '''
+    def setComposite(self, command: str, useTransitions: bool = False):
+        """ parse switch to the composite described by string command """
         # expect string as parameter
         assert type(command) == str
         # parse command
@@ -321,7 +345,7 @@ class VideoMix(object):
         self.setCompositeEx(command.composite, command.A,
                             command.B, useTransitions)
 
-    def testCut(self, command):
+    def testCut(self, command: str) -> Optional[tuple[str, str]]:
         # expect string as parameter
         assert type(command) == str
         # parse command
@@ -329,9 +353,9 @@ class VideoMix(object):
         if (command.composite != self.compositeMode or command.A != self.sourceA or command.B != self.sourceB):
             return command.A, command.B
         else:
-            return False
+            return None
 
-    def testTransition(self, command):
+    def testTransition(self, command: str) -> Optional[tuple[str, str]]:
         # expect string as parameter
         assert type(command) == str
         # parse command
@@ -340,50 +364,50 @@ class VideoMix(object):
         return self.setCompositeEx(command.composite, command.A,
                                    command.B, True, True)
 
-    def getVideoSources(self):
-        ''' legacy command '''
+    def getVideoSources(self) -> list[str]:
+        """ legacy command """
         return [self.sourceA, self.sourceB]
 
-    def setVideoSourceA(self, source):
-        ''' legacy command '''
+    def setVideoSourceA(self, source: str):
+        """ legacy command """
         self.setCompositeEx(None, source, None, useTransitions=False)
 
-    def getVideoSourceA(self):
-        ''' legacy command '''
+    def getVideoSourceA(self) -> str:
+        """ legacy command """
         return self.sourceA
 
-    def setVideoSourceB(self, source):
-        ''' legacy command '''
+    def setVideoSourceB(self, source: str):
+        """ legacy command """
         self.setCompositeEx(None, None, source, useTransitions=False)
 
-    def getVideoSourceB(self):
-        ''' legacy command '''
+    def getVideoSourceB(self) -> str:
+        """ legacy command """
         return self.sourceB
 
-    def setCompositeMode(self, mode):
-        ''' legacy command '''
+    def setCompositeMode(self, mode: str):
+        """ legacy command """
         self.setCompositeEx(mode, None, None, useTransitions=False)
 
-    def getCompositeMode(self):
-        ''' legacy command '''
+    def getCompositeMode(self) -> str:
+        """ legacy command """
         return self.compositeMode
 
-    def getComposite(self):
-        ''' legacy command '''
+    def getComposite(self) -> str:
+        """ legacy command """
         return str(CompositeCommand(self.compositeMode, self.sourceA, self.sourceB))
 
-    def setOverlay(self, location):
-        ''' set up overlay file by location '''
+    def setOverlay(self, location: str) -> str:
+        """ set up overlay file by location """
         self.overlay.set(location)
 
-    def showOverlay(self, visible):
-        ''' set overlay visibility '''
+    def showOverlay(self, visible: bool):
+        """ set overlay visibility """
         self.overlay.show(visible, self.getPlayTime())
 
-    def getOverlay(self):
-        ''' get current overlay file location '''
+    def getOverlay(self) -> str:
+        """ get current overlay file location """
         return self.overlay.get()
 
-    def getOverlayVisible(self):
-        ''' get overlay visibility '''
+    def getOverlayVisible(self) -> bool:
+        """ get overlay visibility """
         return self.overlay.visible()

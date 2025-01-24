@@ -1,16 +1,26 @@
 import logging
+from socket import socket
+
+from gi.repository import Gst
+
+from vocto.pipeline_element import PipelineTerminal
 from vocto.video_codecs import construct_video_encoder_pipeline
-
-from voctocore.lib.tcpmulticonnection import TCPMultiConnection
-from voctocore.lib.config import Config
 from voctocore.lib.args import Args
+from voctocore.lib.config import Config
+from voctocore.lib.outputs.tcpmulticonnection import TCPMultiConnection, ClientStatusType
 
-class AVPreviewOutput(TCPMultiConnection):
 
-    def __init__(self, source, port, use_audio_mix=False, audio_blinded=False):
+class AVPreviewOutput(TCPMultiConnection, PipelineTerminal):
+    log: logging.Logger
+
+    source: str
+    bin: str
+
+    pipeline: Gst.Pipeline
+
+    def __init__(self, source: str, port: int, use_audio_mix: bool = False, audio_blinded: bool = False):
         # create logging interface
-        if not hasattr(self, 'log'):
-            self.log = logging.getLogger('AVPreviewOutput[{}]'.format(source))
+        self.log = logging.getLogger('AVPreviewOutput[{}]'.format(source))
 
         # initialize super
         super().__init__(port)
@@ -79,39 +89,40 @@ class AVPreviewOutput(TCPMultiConnection):
         # close bin
         self.bin += "" if Args.no_bins else "\n)\n"
 
-    def audio_channels(self):
+    def audio_channels(self) -> int:
         return Config.getNumAudioStreams()
 
-    def video_channels(self):
+    def video_channels(self) -> int:
         return 1
 
-    def is_input(self):
+    def is_input(self) -> bool:
         return False
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'AVPreviewOutput[{}]'.format(self.source)
 
-    def attach(self, pipeline):
+    def attach(self, pipeline: Gst.Pipeline):
         self.pipeline = pipeline
 
-    def on_accepted(self, conn, addr):
+    def on_accepted(self, conn: socket, addr):
         self.log.debug('Adding fd %u to multifdsink', conn.fileno())
 
         # find fdsink and emit 'add'
-        fdsink = self.pipeline.get_by_name("fd-preview-{}".format(self.source))
+        fdsink: Gst.Element = self.pipeline.get_by_name("fd-preview-{}".format(self.source))
         fdsink.emit('add', conn.fileno())
 
         # catch disconnect
-        def on_disconnect(multifdsink, fileno):
+        def on_disconnect(_: Gst.Element, fileno: int):
             if fileno == conn.fileno():
                 self.log.debug('fd %u removed from multifdsink', fileno)
                 self.close_connection(conn)
+
         fdsink.connect('client-fd-removed', on_disconnect)
 
         # catch client-removed
-        def on_client_removed(multifdsink, fileno, status):
-            # GST_CLIENT_STATUS_SLOW = 3,
-            if fileno == conn.fileno() and status == 3:
+        def on_client_removed(_: Gst.Element, fileno: int, status: int):
+            if fileno == conn.fileno() and status == ClientStatusType.GST_CLIENT_STATUS_SLOW:
                 self.log.warning('about to remove fd %u from multifdsink '
                                  'because it is too slow!', fileno)
+
         fdsink.connect('client-removed', on_client_removed)

@@ -1,12 +1,22 @@
 import logging
-from configparser import NoOptionError, NoSectionError
 
-from voctocore.lib.config import Config
-from voctocore.lib.errors.configuration_error import ConfigurationError
+from gi.repository import Gst
+
+from vocto.audio_streams import AudioStreams
+from vocto.pipeline_element import PipelineElement
 from voctocore.lib.args import Args
+from voctocore.lib.config import Config
 
 
-class AudioMix(object):
+class AudioMix(PipelineElement):
+    log: logging.Logger
+    audio_streams: AudioStreams
+    streams: list[str]
+    volumes: list[float]
+    mix_volume: float
+    bin: str
+
+    pipeline: Gst.Pipeline
 
     def __init__(self):
         self.log = logging.getLogger('AudioMix')
@@ -45,7 +55,7 @@ class AudioMix(object):
                 name=audio-mix
             """.format(in_channels=len(matrix[0]),
                        out_channels=len(matrix),
-                       matrix=str(matrix).replace("[","<").replace("]",">"))
+                       matrix=str(matrix).replace("[", "<").replace("]", ">"))
 
         for stream in self.streams:
             self.bin += """
@@ -57,14 +67,14 @@ class AudioMix(object):
                 """.format(stream=stream)
         self.bin += "" if Args.no_bins else "\n)"
 
-    def attach(self, pipeline):
+    def attach(self, pipeline: Gst.Pipeline):
         self.pipeline = pipeline
         self.updateMixerState()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'AudioMix'
 
-    def isConfigured(self):
+    def isConfigured(self) -> bool:
         for v in self.volumes:
             if v > 0.0:
                 return True
@@ -81,18 +91,19 @@ class AudioMix(object):
             mixerpad = mixer.get_static_pad('sink_%d' % idx)
             mixerpad.set_property('volume', volume)
 
+    # FIXME
     def setAudioSource(self, source):
         self.volumes = [float(idx == source)
                         for idx in range(len(self.sources))]
         self.updateMixerState()
 
-    def setAudioSourceVolume(self, stream, volume):
+    def setAudioSourceVolume(self, stream: int, volume: float):
         self.volumes[stream] = volume
         self.updateMixerState()
 
-    def setAudioVolume(self, volume):
+    def setAudioVolume(self, volume: float):
         self.mix_volume = volume
         self.updateMixerState()
 
-    def getAudioVolumes(self):
+    def getAudioVolumes(self) -> list[float]:
         return self.volumes

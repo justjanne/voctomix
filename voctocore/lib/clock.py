@@ -5,7 +5,7 @@ from gi.repository import Gst, GstNet
 __all__ = ['Clock', 'NetTimeProvider']
 port = 9998
 
-log = logging.getLogger('Clock')
+log: logging.Logger =logging.getLogger('Clock')
 
 log.debug("Obtaining System-Clock")
 Clock = Gst.SystemClock.obtain()

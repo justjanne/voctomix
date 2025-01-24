@@ -7,9 +7,9 @@ from threading import Lock
 
 from gi.repository import GObject, Gtk
 
-from vocto.port import Port
+from vocto.port import Ports
 
-log = logging.getLogger('Connection')
+log: logging.Logger =logging.getLogger('Connection')
 conn = None
 ip = None
 command_queue = Queue()
@@ -24,10 +24,10 @@ def establish(host):
 
     log.info('establishing Connection to %s', host)
     try:
-        conn = socket.create_connection((host, Port.CORE_LISTENING))
-        log.info("Connection to host %s at port %d successful" % (host, Port.CORE_LISTENING) )
+        conn = socket.create_connection((host, Ports.CORE_LISTENING))
+        log.info("Connection to host %s at port %d successful" % (host, Ports.CORE_LISTENING) )
     except ConnectionRefusedError:
-        log.error("Connecting to %s at port %d has failed. Is voctocore running? Can you ping the host?" % (host, Port.CORE_LISTENING) )
+        log.error("Connecting to %s at port %d has failed. Is voctocore running? Can you ping the host?" % (host, Ports.CORE_LISTENING) )
         sys.exit(-1)
 
     ip = conn.getpeername()[0]

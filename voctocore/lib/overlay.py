@@ -1,17 +1,26 @@
-from gi.repository import Gst, GstController
 import logging
+from typing import Optional
+
 import gi
+from gi.repository import Gst, GstController
+
 gi.require_version('GstController', '1.0')
 
 
 class Overlay:
-    log = logging.getLogger('Overlay')
+    log: logging.Logger = logging.getLogger('Overlay')
 
-    def __init__(self, pipeline, location=None, blend_time=300):
+    overlay: Gst.Element
+    location: Optional[str]
+    isVisible: bool
+    blend_time: int
+    alpha: GstController.InterpolationControlSource
+
+    def __init__(self, pipeline: Gst.Pipeline, location: Optional[str] = None, blend_time: int = 300):
         # get overlay element and config
         self.overlay = pipeline.get_by_name('overlay')
         self.location = location
-        self.isVisible = location != None
+        self.isVisible = location is not None
         self.blend_time = blend_time
 
         # initialize overlay control binding
@@ -20,13 +29,13 @@ class Overlay:
         cb = GstController.DirectControlBinding.new_absolute(self.overlay, 'alpha', self.alpha)
         self.overlay.add_control_binding(cb)
 
-    def set( self, location ):
+    def set(self, location: str):
         self.location = location if location else ""
         if self.isVisible:
-            self.overlay.set_property('location', self.location )
+            self.overlay.set_property('location', self.location)
 
-    def show(self, visible, playtime):
-        ''' set overlay visibility '''
+    def show(self, visible: bool, playtime: int):
+        """ set overlay visibility """
         # check if control binding is available
         assert self.alpha
         # if state changes
@@ -41,12 +50,12 @@ class Overlay:
             self.isVisible = visible
             # re-set location if we get visible
             if visible:
-                self.overlay.set_property('location', self.location )
+                self.overlay.set_property('location', self.location)
 
-    def get(self):
-        ''' get current overlay file location '''
+    def get(self) -> str:
+        """ get current overlay file location """
         return self.location
 
-    def visible(self):
-        ''' get overlay visibility '''
+    def visible(self) -> bool:
+        """ get overlay visibility """
         return self.isVisible

@@ -6,8 +6,6 @@ from dataclasses import dataclass
 
 from typing import Literal
 
-Args = None
-
 @dataclass
 class Arguments:
     verbose: int
@@ -19,6 +17,7 @@ class Arguments:
     gst_debug_details: int
     gstreamer_log: int
 
+Args: Arguments
 
 def parse():
     global Args

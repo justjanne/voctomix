@@ -18,13 +18,13 @@ class PulseAudioSource(AVSource):
 
         self.build_pipeline()
 
-    def port(self):
+    def port(self) -> str:
         return "PulseAudio {}".format(self.device)
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         return 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'PulseAudioSource[{name}] ({device})'.format(
             name=self.name,
             device=self.device

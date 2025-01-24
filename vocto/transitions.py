@@ -9,7 +9,7 @@ import copy
 
 V = 2  # distance (velocity) index
 
-log = logging.getLogger('Transitions')
+log: logging.Logger =logging.getLogger('Transitions')
 logKeyFramesOnly = True
 
 class Transitions:
@@ -52,20 +52,15 @@ class Transitions:
         transition.calculate(frames - 1)
         self.transitions.append(transition)
 
-    def configure(self, cfg, composites, targets=None, fps=25):
+    @staticmethod
+    def configure(cfg, composites, targets=None, fps=25) -> 'Transitions':
         """ generate all transitions configured in the INI-like configuration
             string in <cfg> by using the given <composites> and return them
             in a dictonary
         """
-        def index(composite):
-            for i in range(len(targets)):
-                if composites[targets[i]].equals(composite, True):
-                    return i
-            return None
-
         # filter target composites from given composites
         if not targets:
-            targets = Composites.targets(self, composites)
+            targets = Composites.targets(composites)
         # prepare result
         transitions = Transitions(targets,fps)
 

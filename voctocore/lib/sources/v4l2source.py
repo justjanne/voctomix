@@ -25,7 +25,7 @@ class V4l2AVSource(AVSource):
 
         self.build_pipeline()
 
-    def port(self):
+    def port(self) -> str:
         return "V4l2 device {}".format(self.device)
 
     def attach(self, pipeline):
@@ -34,10 +34,10 @@ class V4l2AVSource(AVSource):
             'v4l2videosrc-{}'.format(self.name))
         GLib.timeout_add(self.timer_resolution * 1000, self.do_timeout)
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         return 1 if self.signalPad and self.signalPad.get_property('signal') else 0
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'V4l2AVSource[{name}] reading device {device}'.format(
             name=self.name,
             device=self.device

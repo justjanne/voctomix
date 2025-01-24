@@ -7,7 +7,7 @@ import copy
 X, Y = 0, 1
 L, T, R, B = 0, 1, 2, 3
 
-log = logging.getLogger('Frame')
+log: logging.Logger =logging.getLogger('Frame')
 
 
 class Frame:

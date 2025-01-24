@@ -3,30 +3,34 @@ import logging
 import os
 import os.path
 import re
+import sys
 from configparser import DuplicateSectionError
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Optional
 from zoneinfo import ZoneInfo
 
-from voctocore.lib.args import Args
-
 from vocto.config import VocConfigParser
+from voctocore.lib.args import Args
 
 __all__ = ['Config']
 
-Config = None
+def scandatetime(value: str) -> datetime:
+    return datetime.strptime(value[:19], "%Y-%m-%dT%H:%M:%S")
 
 
-def scandatetime(str):
-    return datetime.strptime(str[:19], "%Y-%m-%dT%H:%M:%S")
-
-
-def scanduration(str):
-    r = re.match(r'^(\d+):(\d+)$', str)
+def scanduration(value: str) -> timedelta:
+    r = re.match(r'^(\d+):(\d+)$', value)
     return timedelta(hours=int(r.group(1)), minutes=int(r.group(2)))
 
 
 class VoctocoreConfigParser(VocConfigParser):
+    events: list[any]
+    event_now: any
+    event_tz: any
+    events_update: any
+    default_insert: any
+
     def __init__(self):
         super().__init__()
         self.events = []
@@ -35,28 +39,28 @@ class VoctocoreConfigParser(VocConfigParser):
         self.events_update = None
         self.default_insert = None
 
-    def add_section_if_missing(self, section):
+    def add_section_if_missing(self, section: str):
         try:
             self.add_section(section)
         except DuplicateSectionError:
             pass
 
     def getOverlayFile(self):
-        ''' return overlay/file or <None> from INI configuration '''
+        """ return overlay/file or <None> from INI configuration """
         if self.has_option('overlay', 'file'):
             return self.getOverlayNameFromFilePath(self.get('overlay', 'file'))
         else:
             return None
 
     def getScheduleRoom(self):
-        ''' return overlay/room or <None> from INI configuration '''
+        """ return overlay/room or <None> from INI configuration """
         if self.has_option('overlay', 'room'):
             return self.get('overlay', 'room')
         else:
             return None
 
     def getScheduleEvent(self):
-        ''' return overlay/event or <None> from INI configuration '''
+        """ return overlay/event or <None> from INI configuration """
         if self.has_option('overlay', 'event'):
             if self.has_option('overlay', 'room'):
                 self.log.warning(
@@ -66,7 +70,7 @@ class VoctocoreConfigParser(VocConfigParser):
             return None
 
     def getSchedule(self):
-        ''' return overlay/schedule or <None> from INI configuration '''
+        """ return overlay/schedule or <None> from INI configuration """
         if self.has_option('overlay', 'schedule'):
             if self.has_option('overlay', 'room') or self.has_option('overlay', 'event'):
                 return self.get('overlay', 'schedule')
@@ -176,8 +180,8 @@ class VoctocoreConfigParser(VocConfigParser):
                     self.event_now = None
         return self.event_now
 
-    def getOverlaysPath(self):
-        ''' return overlays path or $PWD from INI configuration '''
+    def getOverlaysPath(self) -> str:
+        """ return overlays path or $PWD from INI configuration """
         if self.has_option('overlay', 'path'):
             return os.path.abspath(self.get('overlay', 'path'))
         else:
@@ -195,10 +199,10 @@ class VoctocoreConfigParser(VocConfigParser):
                 )
         return None
 
-    def getOverlayFilePath(self, overlay):
-        ''' return absolute file path to overlay by given string of overlay
+    def getOverlayFilePath(self, overlay: str) -> Optional[str]:
+        """ return absolute file path to overlay by given string of overlay
             file name (and maybe |-separated name)
-        '''
+        """
         # return None if None was given
         if not overlay:
             return None
@@ -212,10 +216,10 @@ class VoctocoreConfigParser(VocConfigParser):
         # return absolute path of filename
         return os.path.join(self.getOverlaysPath(), filename)
 
-    def getOverlayNameFromFilePath(self, filepath):
-        ''' return overlay name from filepath (which may have |-separated
+    def getOverlayNameFromFilePath(self, filepath) -> Optional[str]:
+        """ return overlay name from filepath (which may have |-separated
             name attached)
-        '''
+        """
         # return None if None was given
         if not filepath:
             return None
@@ -231,11 +235,11 @@ class VoctocoreConfigParser(VocConfigParser):
         return "|".join((filename, name)) if name else filename
 
     def getOverlayFiles(self):
-        ''' generate list of available overlay files by the following opportunities:
+        """ generate list of available overlay files by the following opportunities:
             - by 'schedule' (and optionally 'room') from section 'overlay'
             - by 'files' from section 'overlay'
             - by 'file' from section 'overlay'
-        '''
+        """
         # initialize empty inserts list
         inserts = []
 
@@ -310,14 +314,14 @@ class VoctocoreConfigParser(VocConfigParser):
                 'Could not find any availbale overlays in configuration.')
         return valid
 
-    def getOverlayBlendTime(self):
-        ''' return overlay blending time in milliseconds from INI configuration '''
+    def getOverlayBlendTime(self) -> int:
+        """ return overlay blending time in milliseconds from INI configuration """
         if self.has_option('overlay', 'blend'):
             return int(self.get('overlay', 'blend'))
         else:
             return 300
 
-    def getAudioMixMatrix(self):
+    def getAudioMixMatrix(self) -> list[list[float]]:
         if self.has_option('mix', 'audiomixmatrix'):
             # read matrix from config (columns separated by space, rows by slash
             matrix = []
@@ -331,12 +335,13 @@ class VoctocoreConfigParser(VocConfigParser):
         else:
             # create identity matrix for all channels
             channels = self.getAudioChannels()
-            matrix = [[0.0 for x in range(0, channels)]
-                      for x in range(0, channels)]
+            matrix = [[0.0 for _ in range(0, channels)]
+                      for _ in range(0, channels)]
             for i in range(0, channels):
                 matrix[i][i] = 1.0
         return matrix
 
+Config: VoctocoreConfigParser
 
 def load():
     global Config

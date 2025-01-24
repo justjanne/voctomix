@@ -1,13 +1,13 @@
-import os.path
 import logging
-from voctogui.lib.args import Args
+import os.path
+
 import voctogui.lib.connection as Connection
 from vocto.config import VocConfigParser
+from voctogui.lib.args import Args
+
 __all__ = ['Config']
 
-Config = None
-
-log = logging.getLogger('VoctoguiConfigParser')
+log: logging.Logger =logging.getLogger('VoctoguiConfigParser')
 
 
 class VoctoguiConfigParser(VocConfigParser):
@@ -20,19 +20,20 @@ class VoctoguiConfigParser(VocConfigParser):
         log.info("merging server-config %s", server_config)
         self.read_dict(server_config)
 
-    def getHost(self):
+    def getHost(self) -> str:
         return Args.host if Args.host else self.get('server', 'host')
 
-    def getWindowSize(self):
+    def getWindowSize(self) -> tuple[int, int] | None:
         if self.has_option('mainwindow', 'width') \
                 and self.has_option('mainwindow', 'height'):
             # get size from config
-            return (self.getint('mainwindow', 'width'),
-                    self.getint('mainwindow', 'height'))
+            width = self.getint('mainwindow', 'width')
+            height = self.getint('mainwindow', 'height')
+            return width, height
         else:
             return None
 
-    def getForceFullScreen(self):
+    def getForceFullScreen(self) -> bool:
         return self.getboolean('mainwindow', 'forcefullscreen', fallback=False)
 
     def getPresetIcon(self, preset):
@@ -47,16 +48,16 @@ class VoctoguiConfigParser(VocConfigParser):
     def getPresetOptions(self):
         return self.getList('toolbar', 'presets', fallback=[])
 
-    def getShowCloseButton(self):
+    def getShowCloseButton(self) -> bool:
         return self.getboolean('toolbar', 'close', fallback=True)
 
-    def getShowFullScreenButton(self):
+    def getShowFullScreenButton(self) -> bool:
         return self.getboolean('toolbar', 'fullscreen', fallback=False)
 
-    def getShowQueueButton(self):
+    def getShowQueueButton(self) -> bool:
         return self.getboolean('toolbar', 'queues', fallback=False)
 
-    def getShowPortButton(self):
+    def getShowPortButton(self) -> bool:
         return self.getboolean('toolbar', 'ports', fallback=True)
 
     def getToolbarSourcesDefault(self):
@@ -65,7 +66,7 @@ class VoctoguiConfigParser(VocConfigParser):
                 for source in self.getVideoSources()
                 }
 
-    def trySection(self, section_name, default_result=None):
+    def trySection(self, section_name: str, default_result=None):
         return self[section_name] if self.has_section(section_name) else default_result
 
     def getToolbarSourcesA(self):
@@ -86,7 +87,7 @@ class VoctoguiConfigParser(VocConfigParser):
     def getToolbarMods(self):
         return self.trySection('toolbar.mods', {})
 
-    def getToolbarMixDefault(self):
+    def getToolbarMixDefault(self) -> dict[str, str]:
         return {"retake.name": "RETAKE",
                 "cut.name": "CUT",
                 "trans.name": "TRANS"
@@ -98,6 +99,7 @@ class VoctoguiConfigParser(VocConfigParser):
     def getToolbarInsert(self):
         return self.trySection('toolbar.insert', {})
 
+Config: VoctoguiConfigParser
 
 def load():
     global Config

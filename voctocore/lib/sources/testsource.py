@@ -18,7 +18,7 @@ class TestSource(AVSource):
         self.wave = Config.getTestWave(name)
         self.build_pipeline()
 
-    def port(self):
+    def port(self) -> str:
         if self.has_video:
             if self.internal_audio_channels():
                 return "(AV:{}+{})".format(self.pattern, self.wave)
@@ -29,10 +29,10 @@ class TestSource(AVSource):
                 return "(A:{})".format(self.wave)
         return "Test"
 
-    def num_connections(self):
+    def num_connections(self) -> int:
         return 1
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'TestSource[{name}] ({pattern}, {wave})'.format(
             name=self.name,
             pattern=self.pattern,
