@@ -1,0 +1,19 @@
+version = 1
+requires-python = ">=3.12"
+
+[[package]]
+name = "pygobject-stubs"
+version = "2.12.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/99/04/e7dd3a2dc52977d54b98542742da2aa8c2fc5356e45339f37b908ff5dfc5/pygobject_stubs-2.12.0.tar.gz", hash = "sha256:4dad2d876c070a16f604c249bb70e8cbc36373151a6731d826a8436c6a80b99d", size = 810326 }
+
+[[package]]
+name = "voctomix"
+version = "2.0"
+source = { virtual = "." }
+dependencies = [
+    { name = "pygobject-stubs" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "pygobject-stubs", specifier = ">=2.12.0" }]
