@@ -1,11 +1,9 @@
 import logging
-import os
-
-import time
+from typing import Optional
 
 from gi.repository import Gtk, GLib
-import voctogui.lib.connection as Connection
 
+import voctogui.lib.connection as Connection
 from voctogui.lib.config import Config
 
 
@@ -13,7 +11,12 @@ class BlinderToolbarController(object):
     """Manages Accelerators and Clicks on the Composition Toolbar-Buttons"""
 
     # set resolution of the blink timer in seconds
-    timer_resolution = 1.0
+    timer_resolution: int = 1
+
+    log: logging.Logger
+    toolbar: Gtk.Toolbar
+    current_status: Optional[str]
+    blink: bool
 
     def __init__(self, win, uibuilder):
         self.log = logging.getLogger('BlinderToolbarController')

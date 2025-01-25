@@ -1,5 +1,6 @@
 import logging
 import os.path
+from typing import Optional
 
 import voctogui.lib.connection as Connection
 from vocto.config import VocConfigParser
@@ -23,7 +24,7 @@ class VoctoguiConfigParser(VocConfigParser):
     def getHost(self) -> str:
         return Args.host if Args.host else self.get('server', 'host')
 
-    def getWindowSize(self) -> tuple[int, int] | None:
+    def getWindowSize(self) -> Optional[tuple[int, int]]:
         if self.has_option('mainwindow', 'width') \
                 and self.has_option('mainwindow', 'height'):
             # get size from config

@@ -1,12 +1,8 @@
-import logging
-import re
-
 import os
-
-from gi.repository import Gst
 
 from voctocore.lib.config import Config
 from voctocore.lib.sources.avsource import AVSource
+
 
 class FileSource(AVSource):
     timer_resolution = 0.5

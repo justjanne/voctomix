@@ -2,15 +2,19 @@ import logging
 import os
 import json
 import math
+from collections.abc import dict_items
 from configparser import NoOptionError
+from typing import Optional, List
 
 from gi.repository import Gtk, Gdk, GObject
 import voctogui.lib.connection as Connection
+from vocto.audio_streams import AudioStream
 
 from voctogui.lib.config import Config
 from vocto.port import Port
 
 class AudioDisplay(object):
+    audio_streams: Optional[dict[str, list[AudioStream]]]
 
     def __init__(self, audio_box, source, uibuilder, has_volume=True):
         self.log = logging.getLogger('VideoPreviewsController')
@@ -40,13 +44,14 @@ class AudioDisplay(object):
 
         return {"level": uibuilder.find_widget_recursive(audio, 'audio_level_display')}
 
-    def callback(self, rms, peak, decay):
+    def callback(self, rms: list[float], peak: list[float], decay: list[float]):
         if self.audio_streams:
             for name, streams in self.audio_streams.items():
-                _rms = [0] * len(streams)
-                _peak = [0] * len(streams)
-                _decay = [0] * len(streams)
+                _rms: list[float] = [0.0] * len(streams)
+                _peak: list[float] = [0.0] * len(streams)
+                _decay: list[float] = [0.0] * len(streams)
                 for stream in streams:
+                    z: AudioStream = stream
                     _rms[stream.channel] = rms[stream.source_channel]
                     _peak[stream.channel] = peak[stream.source_channel]
                     _decay[stream.channel] = decay[stream.source_channel]

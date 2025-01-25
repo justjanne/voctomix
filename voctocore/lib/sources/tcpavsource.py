@@ -1,7 +1,6 @@
-import logging
+import socket
 
 from gi.repository import Gst, GObject
-import socket
 
 from voctocore.lib.config import Config
 from voctocore.lib.sources.avsource import AVSource
@@ -26,7 +25,7 @@ class TCPAVSource(AVSource):
         self.connected = False
 
     def port(self) -> str:
-        return"%s:%d" % (socket.gethostname(), self.listen_port)
+        return "%s:%d" % (socket.gethostname(), self.listen_port)
 
     def num_connections(self) -> int:
         if self.connected:

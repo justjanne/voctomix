@@ -1,6 +1,4 @@
-import logging
 import re
-import os
 
 from gi.repository import Gst
 
@@ -36,13 +34,13 @@ class ImgVSource(AVSource):
 
     def build_source(self) -> str:
         return """
-    uridecodebin
-        name=imgvsrc-{name}
-        uri={uri}
-    ! videoconvert
-    ! imagefreeze
-        name=img-{name}
-""".format(
+            uridecodebin
+                name=imgvsrc-{name}
+                uri={uri}
+            ! videoconvert
+            ! imagefreeze
+                name=img-{name}
+        """.format(
             name=self.name,
             uri=self.imguri
         )

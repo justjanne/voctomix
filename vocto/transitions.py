@@ -118,7 +118,8 @@ class Transitions:
                 return transition.reversed(), False
         return None, False
 
-    def travel(composites, previous=None):
+    @staticmethod
+    def travel(composites: list[Composite], previous=None):
         """ return a list of pairs of composites along all possible transitions
             between all given composites by walking the tree of all combinations
         """

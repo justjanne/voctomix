@@ -1,8 +1,3 @@
-import logging
-
-from configparser import NoOptionError
-from gi.repository import Gst
-
 from voctocore.lib.config import Config
 from voctocore.lib.sources.avsource import AVSource
 
@@ -39,3 +34,6 @@ class PulseAudioSource(AVSource):
             device=self.device,
             name=self.name,
         )
+
+    def build_videoport(self) -> str:
+        raise Exception("PulseAudioSource has no video support")

@@ -1,7 +1,7 @@
 import math
-import cairo
 
-from gi.repository import Gtk, GLib
+from cairo import Context, LinearGradient
+from gi.repository import Gtk
 
 
 class AudioLevelDisplay(Gtk.DrawingArea):
@@ -11,6 +11,16 @@ class AudioLevelDisplay(Gtk.DrawingArea):
     MARGIN = 4
     CHANNEL_WIDTH = 8
     LABEL_WIDTH = 20
+
+    levelrms: list[float]
+    levelpeak: list[float]
+    leveldecay: list[float]
+    height: int
+
+    bg_lg: LinearGradient
+    rms_lg: LinearGradient
+    peak_lg: LinearGradient
+    decay_lg: LinearGradient
 
     def __init__(self):
         self.levelrms = []
@@ -23,9 +33,9 @@ class AudioLevelDisplay(Gtk.DrawingArea):
         self.connect('draw', self.draw_callback)
 
     # generate gradient from green to yellow to red in logarithmic scale
-    def gradient(self, brightness, darkness, height):
+    def gradient(self, brightness: float, darkness: float, height: int) -> LinearGradient:
         # prepare gradient
-        lg = cairo.LinearGradient(0, 0, 0, height)
+        lg = LinearGradient(0, 0, 0, height)
         # set gradient stops
         lg.add_color_stop_rgb(0.0, brightness, darkness, darkness)
         lg.add_color_stop_rgb(0.22, brightness, brightness, darkness)
@@ -35,7 +45,7 @@ class AudioLevelDisplay(Gtk.DrawingArea):
         # return result
         return lg
 
-    def draw_callback(self, widget, cr):
+    def draw_callback(self, widget, cr: Context):
         # number of audio-channels
         channels = len(self.levelrms)
 
@@ -44,7 +54,7 @@ class AudioLevelDisplay(Gtk.DrawingArea):
 
         yoff = 3
         width = self.get_allocated_width()
-        height = self.get_allocated_height()-yoff
+        height = self.get_allocated_height() - yoff
 
         # normalize db-value to 0…1 and multiply with the height
         rms_px = [self.normalize_db(db) * height for db in self.levelrms]
@@ -72,14 +82,14 @@ class AudioLevelDisplay(Gtk.DrawingArea):
 
             # draw peak bar
             cr.rectangle(
-                x, yoff +height - peak_px[channel], self.CHANNEL_WIDTH, peak_px[channel])
+                x, yoff + height - peak_px[channel], self.CHANNEL_WIDTH, peak_px[channel])
             cr.set_source(self.peak_lg)
             cr.fill()
 
             # draw rms bar below
             cr.rectangle(
                 x, yoff + height - rms_px[channel], self.CHANNEL_WIDTH,
-                rms_px[channel] - peak_px[channel])
+                   rms_px[channel] - peak_px[channel])
             cr.set_source(self.rms_lg)
             cr.fill()
 
@@ -87,8 +97,6 @@ class AudioLevelDisplay(Gtk.DrawingArea):
             cr.rectangle(x, yoff + height - decay_px[channel], self.CHANNEL_WIDTH, 2)
             cr.set_source(self.decay_lg)
             cr.fill()
-
-            first_col = False
 
             # draw db text-markers
             for db in [-40, -20, -10, -5, -4, -3, -2, -1]:
@@ -104,7 +112,7 @@ class AudioLevelDisplay(Gtk.DrawingArea):
 
         return True
 
-    def normalize_db(self, db):
+    def normalize_db(self, db: float) -> float:
         # -60db -> 1.00 (very quiet)
         # -30db -> 0.75
         # -15db -> 0.50
@@ -116,9 +124,10 @@ class AudioLevelDisplay(Gtk.DrawingArea):
     def clamp(self, value, min_value=0, max_value=1):
         return max(min(value, max_value), min_value)
 
-    def level_callback(self, rms, peak, decay):
-        if self.levelrms != rms or self.levelpeak != peak \
-                or self.leveldecay != decay:
+    def level_callback(self, rms: list[float], peak: list[float], decay: list[float]):
+        if self.levelrms != rms \
+            or self.levelpeak != peak \
+            or self.leveldecay != decay:
             self.levelrms = rms
             self.levelpeak = peak
             self.leveldecay = decay

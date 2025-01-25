@@ -352,7 +352,7 @@ class VocConfigParser(ConfigParser):
     def get_sink_audio_map(self, section: str) -> str:
         return self.get(section, 'audio_map')
 
-    def getVideoCodec(self, section: str) -> tuple[str, list[str] | None]:
+    def getVideoCodec(self, section: str) -> tuple[str, Optional[list[str]]]:
         if self.has_option(section, 'videocodec'):
             codec = self.get(section, 'videocodec').split(',', 1)
             if len(codec) > 1:

@@ -89,5 +89,8 @@ class RPICamAVSource(AVSource):
     def build_videoport(self):
         return 'vout-{}.'.format(self.name)
 
+    def build_audioport(self) -> str:
+        raise Exception("RPICamAVSource has no audio support")
+
     def get_nosignal_text(self):
         return super().get_nosignal_text() + "/rpicam%s" % self.device

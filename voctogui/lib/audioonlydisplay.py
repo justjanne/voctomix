@@ -1,9 +1,11 @@
 import logging
 import sys
+from typing import cast, Callable, Any
 
 from gi.repository import Gst, Gdk
 
 from voctogui.lib.args import Args
+from voctogui.lib.audiodisplay import AudioDisplay
 from voctogui.lib.config import Config
 from voctogui.lib.clock import Clock
 
@@ -14,10 +16,15 @@ from vocto.pretty import pretty
 class AudioOnlyDisplay(object):
     """Displays a Voctomix-AudioOnly-Stream into a GtkWidget"""
 
-    def __init__(self, audio_display, port, name, play_audio=False):
+    log: logging.Logger
+    name: str
+    level_callback: Callable[[list[float], list[float], list[float]], None]
+    pipeline: Gst.Pipeline
+
+    def __init__(self, audio_display: AudioDisplay, port, name, play_audio=False):
         self.log = logging.getLogger('AudioOnlyDisplay:%s' % name)
         self.name = name
-        self.level_callback = None if audio_display is None else audio_display.callback
+        self.level_callback = audio_display and audio_display.callback
 
         # Setup Server-Connection, Demuxing and Decoding
         pipe = """
@@ -59,7 +66,7 @@ class AudioOnlyDisplay(object):
         self.log.info("Creating Display-Pipeline:\n%s",  pretty(pipe))
         try:
             # launch gstreamer pipeline
-            self.pipeline = Gst.parse_launch(pipe)
+            self.pipeline = cast(Gst.Pipeline, Gst.parse_launch(pipe))
             self.log.info("pipeline launched successfuly")
         except:
             self.log.error("Can not launch pipeline")
@@ -67,7 +74,7 @@ class AudioOnlyDisplay(object):
 
         if Args.dot:
             self.log.debug("Generating DOT image of audioonlydisplay pipeline")
-            gst_generate_dot(Args, self.pipeline, "gui.audioonlydisplay.{}".format(name))
+            gst_generate_dot(self.pipeline, "gui.audioonlydisplay.{}".format(name), Args.gst_debug_details)
 
         self.pipeline.use_clock(Clock)
 
@@ -80,16 +87,16 @@ class AudioOnlyDisplay(object):
         self.log.info("Launching Display-Pipeline")
         self.pipeline.set_state(Gst.State.PLAYING)
 
-    def on_error(self, bus, message):
+    def on_error(self, bus, message: Gst.Message):
         (error, debug) = message.parse_error()
         self.log.error(
             "GStreamer pipeline element '%s' signaled an error #%u: %s" % (message.src.name, error.code, error.message))
 
-    def mute(self, mute):
-        self.pipeline.get_by_name("audiosink-{name}".format(name=self.name)).set_property(
-            "volume", 1 if mute else 0)
+    def mute(self, mute: bool):
+        self.pipeline.get_by_name("audiosink-{name}".format(name=self.name)) \
+            .set_property("volume", 1 if mute else 0)
 
-    def on_level(self, bus, msg):
+    def on_level(self, bus, msg: Gst.Message):
         if self.level_callback and msg.src.name == 'lvl':
             rms = msg.get_structure().get_value('rms')
             peak = msg.get_structure().get_value('peak')

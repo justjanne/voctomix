@@ -51,7 +51,7 @@ class MiscToolbarController(object):
         key, mod = Gtk.accelerator_parse('t')
         tooltip = Gtk.accelerator_get_label(key, mod)
 
-	    # Controller for fullscreen behavior
+        # Controller for fullscreen behavior
         self.__is_fullscreen = False
         win.connect("window-state-event", self.on_window_state_event)
 

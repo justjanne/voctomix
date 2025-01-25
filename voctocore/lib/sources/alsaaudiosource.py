@@ -39,3 +39,6 @@ class AlsaAudioSource(AVSource):
             device=self.device,
             name=self.name,
         )
+
+    def build_videoport(self) -> str:
+        raise Exception("AlsaAudioSource has no video support")

@@ -90,5 +90,8 @@ class V4l2AVSource(AVSource):
     def build_videoport(self):
         return 'vout-{}.'.format(self.name)
 
+    def build_audioport(self) -> str:
+        raise Exception("V4l2Source has no audio support")
+
     def get_nosignal_text(self):
         return super().get_nosignal_text() + "/v4l2%s" % self.device

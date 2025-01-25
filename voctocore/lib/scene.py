@@ -1,5 +1,6 @@
 import logging
 from dataclasses import dataclass
+from typing import Optional, Union
 
 import gi
 
@@ -32,7 +33,7 @@ class Scene:
         With commit() you add frames at a specified play time
     """
     log = logging.getLogger('Scene')
-    frames: dict[str, list[Frame] | None]
+    frames: dict[str, Optional[list[Frame]]]
     mixer_pads: dict[str, MixerPads]
     cropper_pads: dict[str, CropperPads]
     dirty: bool
@@ -42,14 +43,14 @@ class Scene:
             of the sources to manage
         """
         # frames to apply from
-        self.frames = dict[str, list[Frame] | None]()
+        self.frames = dict[str, Optional[list[Frame]]]()
         # binding pads to apply to
         self.mixer_pads = dict()
         self.cropper_pads = dict() if cropping else None
         # time per frame
         self.frame_time = int(Gst.SECOND / fps)
 
-        def bind(pad: Gst.Pad, prop: str) -> GstController.InterpolationControlSource:
+        def bind(pad: Union[Gst.Pad, Gst.Element], prop: str) -> GstController.InterpolationControlSource:
             """ adds a binding to a gstreamer property
                 pad's property
             """
