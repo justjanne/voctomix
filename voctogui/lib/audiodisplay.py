@@ -1,17 +1,15 @@
-import logging
-import os
 import json
+import logging
 import math
-from collections.abc import dict_items
-from configparser import NoOptionError
-from typing import Optional, List
+import os
+from typing import Optional
 
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk, GObject
+
 import voctogui.lib.connection as Connection
 from vocto.audio_streams import AudioStream
-
 from voctogui.lib.config import Config
-from vocto.port import Port
+
 
 class AudioDisplay(object):
     audio_streams: Optional[dict[str, list[AudioStream]]]

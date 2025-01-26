@@ -126,7 +126,7 @@ class Composite:
         self.frame[0].original_size = size
         self.frame[1].original_size = size
 
-    def covered(self):
+    def covered(self) -> bool:
         """ check if below (A) is invisible or covered by above (B)
             (considers shape with cropping and transparency)
         """
@@ -144,14 +144,14 @@ class Composite:
                 bc[R] <= ac[R] and
                 bc[B] <= ac[B])
 
-    def single(self):
+    def single(self) -> bool:
         """ check if above (B) is invisible
         """
         below, above = self.frame
         return above.invisible()
 
-    def both(self):
-        return not (single() or covered())
+    def both(self) -> bool:
+        return not (self.single() or self.covered())
 
 class Composites:
     """ a namespace for composite related methods

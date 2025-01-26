@@ -1,6 +1,7 @@
 import logging
 import re
 import sys
+from typing import cast
 
 from gi.repository import Gst
 
@@ -26,6 +27,7 @@ class Pipeline(object):
     bin: list[PipelineElement]
     ports: list[Port]
     queues: list[Gst.Element]
+    pipeline: Gst.Pipeline
 
     def __init__(self):
         self.log = logging.getLogger('Pipeline')
@@ -167,7 +169,7 @@ class Pipeline(object):
         self.prevstate = None
         try:
             # launch gstreamer pipeline
-            self.pipeline = Gst.parse_launch(pipeline)
+            self.pipeline = cast(Gst.Pipeline, Gst.parse_launch(pipeline))
             self.log.info("pipeline launched successfuly")
         except Exception:
             self.log.exception("Can not launch pipeline")
