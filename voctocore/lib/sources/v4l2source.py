@@ -80,7 +80,7 @@ class V4l2AVSource(AVSource):
 
 
         pipe += """\
-            ! videoconvert
+            ! videoconvert matrix-mode=none primaries-mode=none chroma-mode=none
             ! videoscale
             ! videorate
                 name=vout-{name}
