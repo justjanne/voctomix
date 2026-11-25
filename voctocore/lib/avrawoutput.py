@@ -7,23 +7,23 @@ from gi.repository import Gst
 from voctocore.lib.args import Args
 from voctocore.lib.avnode import AVIONode
 from voctocore.lib.config import Config
+from voctocore.lib.tcpmulticonnection import TCPMultiConnection
 
 
-class AVRawOutput(AVIONode):
+class AVRawOutput(TCPMultiConnection, AVIONode):
     log: logging.Logger
     source: str
     bin: str
-    listen_port: int
-    connections: int
 
     def __init__(self, source: str, port: int, use_audio_mix: bool=False, audio_blinded: bool=False):
         # create logging interface
         self.log = logging.getLogger('AVRawOutput[{}]'.format(source))
 
+        # initialize super
+        super().__init__(port)
+
         # remember things
         self.source = source
-        self.listen_port = port
-        self.connections = 0
 
         # open bin
         self.bin = "" if Args.no_bins else """
@@ -73,13 +73,15 @@ class AVRawOutput(AVIONode):
                 ! queue
                     max-size-time=3000000000
                     name=queue-fd-{source}
-                ! srtsink
-                    mode=listener
-                    wait-for-connection=false
-                    uri=srt://:{port}
-                    latency=10
+                ! multifdsink
+                    blocksize=1048576
+                    buffers-max={buffers_max}
+                    sync-method=next-keyframe
                     name=fd-{source}
-                """.format(source=self.source, port=self.listen_port, buffer=1_000_000_000 // 25)
+                """.format(
+            buffers_max=Config.getOutputBuffers(self.source),
+            source=self.source
+        )
 
         # close bin
         self.bin += "" if Args.no_bins else "\n)\n"
@@ -96,11 +98,29 @@ class AVRawOutput(AVIONode):
     def __str__(self) -> str:
         return 'AVRawOutput[{}]'.format(self.source)
 
-    def num_connections(self) -> int:
-        return self.connections
-
-    def port(self) -> str:
-        return "127.0.0.1:{}".format(self.listen_port)
-
     def attach(self, pipeline: Gst.Pipeline):
         self.pipeline = pipeline
+
+    def on_accepted(self, conn: socket.socket, addr: tuple[str, int]):
+        self.log.debug('Adding fd %u to multifdsink', conn.fileno())
+
+        # find fdsink and emit 'add'
+        fdsink = self.pipeline.get_by_name("fd-{}".format(self.source))
+        if fdsink is None:
+            raise Exception("could not find pipeline element for {}".format(self))
+        fdsink.emit('add', conn.fileno())
+
+        # catch disconnect
+        def on_client_fd_removed(multifdsink: Gst.Element, fileno: int):
+            if fileno == conn.fileno():
+                self.log.debug('fd %u removed from multifdsink', fileno)
+                self.close_connection(conn)
+        fdsink.connect('client-fd-removed', on_client_fd_removed)
+
+        # catch client-removed
+        def on_client_removed(multifdsink: Gst.Element, fileno: int, status: int):
+            # GST_CLIENT_STATUS_SLOW = 3,
+            if fileno == conn.fileno() and status == 3:
+                self.log.warning('about to remove fd %u from multifdsink '
+                                 'because it is too slow!', fileno)
+        fdsink.connect('client-removed', on_client_removed)
