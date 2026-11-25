@@ -12,9 +12,9 @@ from vocto.config import VocConfigParser
 log = logging.getLogger('video_codecs')
 
 vaapi_encoders = {
-    'h264': 'vah264enc key-int-max=1',
-    'h265': 'vah265enc key-int-max=1',
-    'jpeg': 'vajpegenc',
+    'h264': 'vapostproc ! vah264enc key-int-max=1',
+    'h265': 'vapostproc ! vah265enc key-int-max=1',
+    'jpeg': 'vapostproc ! vajpegenc',
 }
 
 v4l2_encoders = {
@@ -60,9 +60,8 @@ def construct_video_encoder_pipeline(config: VocConfigParser, section: str) -> s
         # we can also force a video format here (format=I420) but this breaks scalling at least on Intel HD3000 therefore it currently removed
         pipeline = """  ! capsfilter
                             caps=video/x-raw,interlace-mode=progressive
-                        ! vapostproc
                         ! {encoder}
-                        """.format(encoder=vaapi_encoders[codec])
+                        """.format(encoder=config.getVaCoreElement(codec) or vaapi_encoders[codec])
 
     elif encoder == 'v4l2':
         if codec not in v4l2_encoders:
@@ -113,7 +112,7 @@ def construct_video_decoder_pipeline(config: VocConfigParser, section: str) -> s
     decoder = config.getVideoDecoder(section)
     codec, options = config.getVideoCodec(section)
     if decoder == 'vaapi':
-        return vaapi_decoders[codec]
+        return config.getVaClientElement(codec) or vaapi_decoders[codec]
     elif decoder == 'cpu':
         return cpu_decoders[codec]
     else:

@@ -397,6 +397,16 @@ class VocConfigParser(ConfigParser):
             return self.get(section, 'videodecoder')
         return None
 
+    def getVaCoreElement(self, key: str) -> Optional[str]:
+        if self.has_option("va_core", key):
+            return self.get("va_core", key)
+        return None
+
+    def getVaClientElement(self, key: str) -> Optional[str]:
+        if self.has_option("va_client", key):
+            return self.get("va_client", key)
+        return None
+
     def getDenoise(self, section: str) -> int:
         if self.has_option(section, 'denoise'):
             if self.getboolean(section, 'denoise'):
