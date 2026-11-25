@@ -108,7 +108,7 @@ class VideoMix(AVNode):
         for idx, name in enumerate(self.sources):
             self.bin += """
                 video-{name}.
-                ! videobox
+                ! videocrop
                     name=cropper-{name}
                 ! queue
                     max-size-time=3000000000
