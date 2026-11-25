@@ -68,6 +68,7 @@ class DeckLinkAVSource(AVSource):
                     """.format(deinterlacer=self.build_deinterlacer())
 
             pipe += """\
+                ! videorate drop-only=true
                 ! videoconvert
                 ! videoscale
                 ! videorate
