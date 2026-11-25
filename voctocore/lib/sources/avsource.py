@@ -144,6 +144,7 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                     videotestsrc
                         name=canvas-{name}
                         pattern={nosignalpattern}
+                        num-buffers=1
                     ! textoverlay
                         name=nosignal-{name}
                         text=\"{nosignal}\"
@@ -152,6 +153,7 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                         shaded-background=yes
                         font-desc="Roboto Bold, 20"
                     ! {vcaps}
+                    ! imagefreeze is-live=true
                     ! queue
                         max-size-time=3000000000
                     ! compositor-{name}.
