@@ -58,7 +58,8 @@ class TestSource(AVSource):
                       name=videotestsrc-{name}
                       do-timestamp=true
                       pattern={pattern}
-                      is-live=true""".format(
+                      is-live=true
+              """.format(
             name=self.name,
             pattern=self.pattern
         )

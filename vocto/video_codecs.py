@@ -11,19 +11,11 @@ from vocto.config import VocConfigParser
 
 log = logging.getLogger('video_codecs')
 
-# https://blogs.igalia.com/vjaquez/2016/04/06/gstreamer-vaapi-1-8-the-codec-split/
-if Gst.version() < (1, 8):
-    vaapi_encoders = {
-        'h264': 'vaapiencode_h264',
-        'jpeg': 'vaapiencode_jpeg',
-        'mpeg2': 'vaapiencode_mpeg2',
-    }
-else:
-    vaapi_encoders = {
-        'h264': 'vaapih264enc keyframe-period=1',
-        'jpeg': 'vaapijpegenc',
-        'mpeg2': 'vaapimpeg2enc',
-    }
+vaapi_encoders = {
+    'h264': 'vah264enc key-int-max=1',
+    'h265': 'vah265enc key-int-max=1',
+    'jpeg': 'vajpegenc',
+}
 
 v4l2_encoders = {
     'h264': 'v4l2h264enc',
@@ -36,17 +28,11 @@ cpu_encoders = {
     'mpeg2': "mpeg2enc"
 }
 
-if Gst.version() < (1, 8):
-    vaapi_decoders = {
-        'h264': 'vaapidecode_h264',
-        'mpeg2': 'vaapidecode_mpeg2',
-    }
-else:
-    vaapi_decoders = {
-        'h264': 'vaapih264dec',
-        'jpeg': 'vaapijpegdec',
-        'mpeg2': 'vaapimpeg2dec',
-    }
+vaapi_decoders = {
+    'h264': 'vah264dec',
+    'h265': 'vah265dec',
+    'jpeg': 'vajpegdec',
+}
 
 cpu_decoders = {
     'h264': """ video/x-h264
@@ -74,7 +60,7 @@ def construct_video_encoder_pipeline(config: VocConfigParser, section: str) -> s
         # we can also force a video format here (format=I420) but this breaks scalling at least on Intel HD3000 therefore it currently removed
         pipeline = """  ! capsfilter
                             caps=video/x-raw,interlace-mode=progressive
-                        ! vaapipostproc
+                        ! vapostproc
                         ! {encoder}
                         """.format(encoder=vaapi_encoders[codec])
 
@@ -112,8 +98,13 @@ def construct_video_encoder_pipeline(config: VocConfigParser, section: str) -> s
     pipeline += """! {vcaps}
                 """.format(vcaps=vcaps)
 
-    if codec == "h264":
-        pipeline += """! h264parse"""
+    match codec:
+        case "h264":
+            pipeline += """! h264parse"""
+        case "h265":
+            pipeline += """! h265parse"""
+        case _:
+            pass
 
     return pipeline
 

@@ -66,7 +66,7 @@ class VideoMix(AVNode):
         if Config.hasOverlay():
             self.bin += """\
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-overlay
                 ! gdkpixbufoverlay
                     name=overlay
@@ -89,7 +89,7 @@ class VideoMix(AVNode):
                 name=sig
             ! {vcaps}
             ! queue
-                max-size-time=3000000000
+                max-size-time=1
             ! tee
                 name=video-mix
             """.format(
@@ -100,7 +100,7 @@ class VideoMix(AVNode):
             self.bin += """
                 video-{name}.
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-video-{name}
                 ! videomixer.
                 """.format(name=background)
@@ -111,7 +111,7 @@ class VideoMix(AVNode):
                 ! videobox
                     name=cropper-{name}
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-videomixer-{name}
                 ! videomixer.
                 """.format(

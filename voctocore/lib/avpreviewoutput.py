@@ -1,30 +1,29 @@
 import logging
-import socket
 
 from gi.repository import Gst
 
 from vocto.video_codecs import construct_video_encoder_pipeline
-from voctocore.lib.avnode import AVIONode
-
-from voctocore.lib.tcpmulticonnection import TCPMultiConnection
-from voctocore.lib.config import Config
 from voctocore.lib.args import Args
+from voctocore.lib.avnode import AVIONode
+from voctocore.lib.config import Config
 
-class AVPreviewOutput(TCPMultiConnection, AVIONode):
+
+class AVPreviewOutput(AVIONode):
     log: logging.Logger
     source: str
     bin: str
+    listen_port: int
+    connections: int
 
     def __init__(self, source: str, port: int, use_audio_mix: bool=False, audio_blinded: bool=False):
         # create logging interface
         if not hasattr(self, 'log'):
             self.log = logging.getLogger('AVPreviewOutput[{}]'.format(source))
 
-        # initialize super
-        super().__init__(port)
-
         # remember things
         self.source = source
+        self.listen_port = port
+        self.connections = 0
 
         # open bin
         self.bin = "" if Args.no_bins else """
@@ -38,11 +37,11 @@ class AVPreviewOutput(TCPMultiConnection, AVIONode):
                     video-{source}.
                     ! {vcaps}
                     ! queue
-                        max-size-time=3000000000
+                        max-size-time=1
                         name=queue-preview-video-{source}
                     {vpipeline}
                     ! queue
-                        max-size-time=3000000000
+                        max-size-time=1
                         name=queue-mux-preview-{source}
                     ! mux-preview-{source}.
                     """.format(source=self.source,
@@ -55,11 +54,11 @@ class AVPreviewOutput(TCPMultiConnection, AVIONode):
             self.bin += """
                     {use_audio}audio-{audio_source}{audio_blinded}.
                     ! queue
-                        max-size-time=3000000000
+                        max-size-time=1
                         name=queue-preview-audio-{source}
                     ! audioconvert
                     ! queue
-                        max-size-time=3000000000
+                        max-size-time=1
                         name=queue-mux-preview-audio-{source}
                     ! mux-preview-{source}.
                     """.format(source=self.source,
@@ -75,14 +74,16 @@ class AVPreviewOutput(TCPMultiConnection, AVIONode):
                     streamable=true
                     writing-app=Voctomix-AVPreviewOutput
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time={buffer}
                     name=queue-fd-preview-{source}
-                ! multifdsink
-                    blocksize=1048576
-                    buffers-max=500
-                    sync-method=next-keyframe
+                ! srtsink
+                    sync=true
+                    mode=listener
+                    wait-for-connection=false
+                    uri=srt://:{port}
+                    latency=10
                     name=fd-preview-{source}
-                """.format(source=self.source)
+                """.format(source=self.source, port=self.listen_port, buffer=1_000_000_000 // 25)
 
         # close bin
         self.bin += "" if Args.no_bins else "\n)\n"
@@ -99,29 +100,11 @@ class AVPreviewOutput(TCPMultiConnection, AVIONode):
     def __str__(self) -> str:
         return 'AVPreviewOutput[{}]'.format(self.source)
 
+    def num_connections(self) -> int:
+        return self.connections
+
+    def port(self) -> str:
+        return "127.0.0.1:{}".format(self.listen_port)
+
     def attach(self, pipeline: Gst.Pipeline):
         self.pipeline = pipeline
-
-    def on_accepted(self, conn: socket.socket, addr: tuple[str, int]):
-        self.log.debug('Adding fd %u to multifdsink', conn.fileno())
-
-        # find fdsink and emit 'add'
-        fdsink = self.pipeline.get_by_name("fd-preview-{}".format(self.source))
-        if fdsink is None:
-            raise Exception("could not find pipeline element for {}".format(self))
-        fdsink.emit('add', conn.fileno())
-
-        # catch disconnect
-        def on_disconnect(multifdsink: Gst.Element, fileno: int):
-            if fileno == conn.fileno():
-                self.log.debug('fd %u removed from multifdsink', fileno)
-                self.close_connection(conn)
-        fdsink.connect('client-fd-removed', on_disconnect)
-
-        # catch client-removed
-        def on_client_removed(multifdsink: Gst.Element, fileno: int, status: int):
-            # GST_CLIENT_STATUS_SLOW = 3,
-            if fileno == conn.fileno() and status == 3:
-                self.log.warning('about to remove fd %u from multifdsink '
-                                 'because it is too slow!', fileno)
-        fdsink.connect('client-removed', on_client_removed)

@@ -48,14 +48,14 @@ class Blinder(AVNode):
                 compositor
                     name=compositor-blinder-{livesource}
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-video-{livesource}-blinded
                 ! tee
                     name=video-{livesource}-blinded
 
                 video-{livesource}.
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-video-{livesource}-compositor-blinder-{livesource}
                 ! compositor-blinder-{livesource}.
                 """.format(livesource=livesource)
@@ -64,7 +64,7 @@ class Blinder(AVNode):
                 self.bin += """
                     video-{blindersource}.
                     ! queue
-                        max-size-time=3000000000
+                        max-size-time=1
                         name=queue-video-blinder-{blindersource}-compositor-blinder-{livesource}
                     ! compositor-blinder-{livesource}.
                     """.format(
@@ -80,18 +80,18 @@ class Blinder(AVNode):
                 amplification={volume}
             ! queue
                 name=queue-audio-mix-blinded
-                max-size-time=3000000000
+                max-size-time=1
             ! tee
                 name=audio-mix-blinded
 
             audio-mix.
             ! queue
-                max-size-time=3000000000
+                max-size-time=1
                 name=queue-capssetter-blinder
             ! capssetter
                 caps={acaps}
             ! queue
-                max-size-time=3000000000
+                max-size-time=1
                 name=queue-audiomixer-blinder
             ! audiomixer-blinder.
             """.format(acaps=self.acaps,
@@ -102,7 +102,7 @@ class Blinder(AVNode):
         self.bin += """
             audio-blinder.
             ! queue
-                max-size-time=3000000000
+                max-size-time=1
                 name=queue-audio-blinded-audiomixer-blinder
             ! audiomixer-blinder.
             """

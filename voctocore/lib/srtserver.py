@@ -44,11 +44,11 @@ class SRTServerSink(AVIONode):
                 video-mix.
                 ! {vcaps}
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-mux-video-localplayout
                 {vpipeline} ! h264parse config-interval=1
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-mux-localplayout-{source}
                 ! tee name=videomix-localplayout-{source}
                 """.format(
@@ -68,11 +68,11 @@ class SRTServerSink(AVIONode):
             self.bin += """
                 {use_audio}audio-{audio_source}{audio_blinded}.
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-audio-localplayout-convert-{source}
                 {apipeline}
                 ! queue
-                    max-size-time=3000000000
+                    max-size-time=1
                     name=queue-mux-audio-{source}
                 ! tee name=audiomix-localplayout-{source}
                 """.format(
@@ -96,7 +96,7 @@ class SRTServerSink(AVIONode):
             mpegtsmux
                 name=mux-localplayout-{source}
             ! queue
-                max-size-time=3000000000
+                max-size-time=1
                 name=queue-sink-localplayout-{source}
                 leaky=downstream
             ! tee name=source-localplayout-{source}
