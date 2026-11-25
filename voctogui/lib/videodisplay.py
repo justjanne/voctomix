@@ -26,11 +26,9 @@ class VideoDisplay(object):
 
         # Setup Server-Connection, Demuxing and Decoding
         pipe = """
-            tcpclientsrc
+            srtsrc
                 name=tcpsrc-{name}
-                host={host}
-                port={port}
-                blocksize=1048576
+                uri="srt://{host}:{port}" latency=10
             ! matroskademux
                 name=demux-{name}
                 """.format(name=name,
@@ -41,7 +39,7 @@ class VideoDisplay(object):
             self.log.info('using encoded previews instead of raw-video')
 
             pipe += """
-                demux-{name}.
+                demux-{name}.video_0
                 ! queue
                     name=queue-video-{name}
                 ! {video_decoder}
@@ -53,16 +51,15 @@ class VideoDisplay(object):
             preview_caps = 'video/x-raw'
             self.log.info('using raw-video instead of encoded-previews')
             pipe += """
-                demux-{name}.
+                demux-{name}.video_0
                 ! queue
                     name=queue-video-{name}
                 ! {previewcaps}
                 """.format(name=name,
                            previewcaps=preview_caps)
 
-        pipe += """ ! videoconvert
-                    ! videoscale
-                    """
+        pipe += """ ! {caps}
+                    """.format(caps=Config.getVideoCaps())
 
         if Config.getPreviewNameOverlay() and name:
             pipe += """\
@@ -84,21 +81,25 @@ class VideoDisplay(object):
                         ! glcolorconvert
                         ! glimagesinkelement
                             name=imagesink-{name}
+                            sync=false
                             """.format(name=name)
 
         elif videosystem == 'xv':
             pipe += """ ! xvimagesink
                             name=imagesink-{name}
+                            sync=false
                         """.format(name=name)
 
         elif videosystem == 'x':
             pipe += """ ! ximagesink
                             name=imagesink-{name}
+                            sync=false
                         """.format(name=name)
 
         elif videosystem == 'vaapi':
             pipe += """ ! vaapisink
                             name=imagesink-{name}
+                            sync=false
                         """.format(name=name)
 
         else:
@@ -109,7 +110,7 @@ class VideoDisplay(object):
         if has_audio:
             # add an Audio-Path through a level-Element
             pipe += """
-                demux-{name}.
+                demux-{name}.audio_0
                 ! queue
                     name=queue-audio-{name}
                 ! level

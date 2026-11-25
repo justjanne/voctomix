@@ -37,11 +37,12 @@ class AVPreviewOutput(AVIONode):
                     video-{source}.
                     ! {vcaps}
                     ! queue
-                        max-size-time=1
+                        leaky=downstream
+                        max-size-time=1000000000
                         name=queue-preview-video-{source}
                     {vpipeline}
                     ! queue
-                        max-size-time=1
+                        max-size-time=3000000000
                         name=queue-mux-preview-{source}
                     ! mux-preview-{source}.
                     """.format(source=self.source,
@@ -54,11 +55,12 @@ class AVPreviewOutput(AVIONode):
             self.bin += """
                     {use_audio}audio-{audio_source}{audio_blinded}.
                     ! queue
-                        max-size-time=1
+                        leaky=downstream 
+                        max-size-time=1000000000
                         name=queue-preview-audio-{source}
                     ! audioconvert
                     ! queue
-                        max-size-time=1
+                        max-size-time=3000000000
                         name=queue-mux-preview-audio-{source}
                     ! mux-preview-{source}.
                     """.format(source=self.source,
@@ -74,7 +76,7 @@ class AVPreviewOutput(AVIONode):
                     streamable=true
                     writing-app=Voctomix-AVPreviewOutput
                 ! queue
-                    max-size-time={buffer}
+                    max-size-time=3000000000
                     name=queue-fd-preview-{source}
                 ! srtsink
                     sync=true

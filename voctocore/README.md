@@ -673,7 +673,7 @@ from which you are capturing):
 [programoutput]
 enabled = true
 # channel=4 --> SDI 5
-videosink=queue max-size-bytes=0 max-size-buffers=0 max-size-time=1000000000 ! videoconvert ! video/x-raw,width=1920,height=1080,framerate=60/1 ! ajaout.video ajasinkcombiner name=ajaout ! ajasink channel=4 reference-source=input-1
+videosink=queue max-size-bytes=0 max-size-buffers=0 max-size-time=3000000000000000000 ! videoconvert ! video/x-raw,width=1920,height=1080,framerate=60/1 ! ajaout.video ajasinkcombiner name=ajaout ! ajasink channel=4 reference-source=input-1
 # Note that the audio buffers must be padded to 16 channels and chunked at the framerate or the pipeline will stall or sound very odd
 audiosink=audiomixmatrix in-channels=2 out-channels=16 channel-mask=-1 mode=first-channels ! audiobuffersplit output-buffer-duration=1/60 ! ajaout.audio
 ```

@@ -89,7 +89,7 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                 self.bin += """
                     {audioport}
                     ! queue
-                        max-size-time=1
+                        max-size-time=3000000000
                         name=queue-source-audio-{name}
                     ! tee
                         name=source-audio-{name}
@@ -101,7 +101,7 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                     self.bin += """
                         source-audio-{name}.
                         ! queue
-                            max-size-time=1
+                            max-size-time=3000000000
                             name=queue-source-audio-fakesink-{name}
                         ! fakesink
                             async=false
@@ -112,7 +112,7 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                         self.bin += """
                             source-audio-{name}.
                             ! queue
-                                max-size-time=1
+                                max-size-time=3000000000
                                 name=queue-audiomixmatrix-{stream}
                             ! audiomixmatrix
                                 name=audiomixmatrix-{stream}
@@ -122,7 +122,7 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                             ! {acaps}
                             ! queue
                                 name=queue-audio-{stream}
-                                max-size-time=1
+                                max-size-time=3000000000
                             ! tee
                                 name=audio-{stream}
                             """.format(
@@ -153,19 +153,19 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                         font-desc="Roboto Bold, 20"
                     ! {vcaps}
                     ! queue
-                        max-size-time=1
+                        max-size-time=3000000000
                     ! compositor-{name}.
 
                     {videoport}
                     ! {vcaps}
                     ! queue
-                        max-size-time=1
+                        max-size-time=3000000000
                     ! compositor-{name}.
 
                     compositor
                         name=compositor-{name}
                     ! queue
-                        max-size-time=1
+                        max-size-time=3000000000
                     ! tee
                         name=video-{name}"""
             else:
@@ -173,7 +173,7 @@ class AVSource(AVIONode, metaclass=ABCMeta):
                     {videoport}
                     ! {vcaps}
                     ! queue
-                        max-size-time=1
+                        max-size-time=3000000000
                     ! tee
                         name=video-{name}"""
             self.bin += video.format(

@@ -29,9 +29,9 @@ cpu_encoders = {
 }
 
 vaapi_decoders = {
-    'h264': 'vah264dec',
-    'h265': 'vah265dec',
-    'jpeg': 'vajpegdec',
+    'h264': 'h264parse ! vah264dec ! vapostproc',
+    'h265': 'h265parse ! vah265dec ! vapostproc',
+    'jpeg': 'vajpegdec ! vapostproc',
 }
 
 cpu_decoders = {

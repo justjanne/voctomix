@@ -44,11 +44,11 @@ class LocalRecordingSink(AVIONode):
                 video-mix.
                 ! {vcaps}
                 ! queue
-                    max-size-time=1
+                    max-size-time=3000000000
                     name=queue-mux-video-localplayout
                 {vpipeline} ! h264parse config-interval=1
                 ! queue
-                    max-size-time=1
+                    max-size-time=3000000000
                     name=queue-mux-localplayout-{source}
                 ! tee name=videomix-localplayout-{source}
                 """.format(
@@ -69,11 +69,11 @@ class LocalRecordingSink(AVIONode):
             self.bin += """
                 {use_audio}audio-{audio_source}{audio_blinded}.
                 ! queue
-                    max-size-time=1
+                    max-size-time=3000000000
                     name=queue-audio-localplayout-convert-{source}
                 {apipeline}
                 ! queue
-                    max-size-time=1
+                    max-size-time=3000000000
                     name=queue-mux-audio-{source}
                 ! tee name=audiomix-localplayout-{source}
                 """.format(
@@ -95,7 +95,7 @@ class LocalRecordingSink(AVIONode):
 
         # recording pipeline
         self.bin += """
-            splitmuxsink async-finalize=true max-size-time=1 muxer-factory=mpegtsmux location="/mnt/video/default.ts" name=recording-{source}
+            splitmuxsink async-finalize=true max-size-time=3000000000 muxer-factory=mpegtsmux location="/mnt/video/default.ts" name=recording-{source}
             """.format(
             source=self.source
         )
@@ -105,7 +105,7 @@ class LocalRecordingSink(AVIONode):
             mpegtsmux
                 name=mux-localplayout-{source}
             ! queue
-                max-size-time=1
+                max-size-time=3000000000
                 name=queue-sink-localplayout-{source}
                 leaky=downstream
             ! tee name=source-localplayout-{source}

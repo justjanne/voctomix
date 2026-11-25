@@ -38,7 +38,8 @@ class ProgramOutputSink(AVIONode):
                 video-mix.
                 ! {vcaps}
                 ! queue
-                    max-size-time=1
+                    leaky=downstream 
+                    max-size-time=1000000000
                     name=queue-mux-video-localui
                 ! {videosink} sync=false
         """.format(
@@ -51,14 +52,15 @@ class ProgramOutputSink(AVIONode):
             self.bin += """
                 {use_audio}audio-{audio_source}{audio_blinded}.
                 ! queue
-                    max-size-time=1
+                    leaky=downstream 
+                    max-size-time=1000000000
                     name=queue-audio-mix-convert-{source}
                 ! audioconvert
                 ! queue
-                    max-size-time=1
+                    max-size-time=3000000000
                     name=queue-mux-audio-{source}
                 ! audioresample
-                ! {audiosink}
+                ! {audiosink} sync=false
                 """.format(
                 source=self.source,
                 use_audio="" if use_audio_mix else "source-",

@@ -41,7 +41,7 @@ class AudioMix(AVNode):
             audiomixer
                 name=audiomixer
             ! queue
-                max-size-time=1
+                max-size-time=3000000000
                 name=queue-audiomixer-audiomixmatrix
             ! audiomixmatrix
                 name=audiomixer-audiomixmatrix
@@ -49,7 +49,7 @@ class AudioMix(AVNode):
                 out_channels={out_channels}
                 matrix="{matrix}"
             ! queue
-                max-size-time=1
+                max-size-time=3000000000
                 name=queue-audio-mix
             ! tee
                 name=audio-mix
@@ -61,7 +61,7 @@ class AudioMix(AVNode):
             self.bin += """
                 audio-{stream}.
                 ! queue
-                    max-size-time=1
+                    max-size-time=3000000000
                     name=queue-audio-{stream}
                 ! audiomixer.
                 """.format(stream=stream)

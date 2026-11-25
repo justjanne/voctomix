@@ -37,7 +37,8 @@ class AVRawOutput(AVIONode):
                     video-{source}.
                     ! {vcaps}
                     ! queue
-                        max-size-time=1
+                        leaky=downstream 
+                        max-size-time=1000000000
                         name=queue-mux-video-{source}                   
                     ! mux-{source}.
                     """.format(source=self.source,
@@ -48,11 +49,12 @@ class AVRawOutput(AVIONode):
             self.bin += """
                 {use_audio}audio-{audio_source}{audio_blinded}.
                 ! queue
-                    max-size-time=1
+                        leaky=downstream 
+                        max-size-time=1000000000
                     name=queue-audio-mix-convert-{source}
                 ! audioconvert
                 ! queue
-                    max-size-time=1
+                    max-size-time=3000000000
                     name=queue-mux-audio-{source}
                 ! mux-{source}.
                 """.format(
@@ -69,7 +71,7 @@ class AVRawOutput(AVIONode):
                     streamable=true
                     writing-app=Voctomix-AVRawOutput
                 ! queue
-                    max-size-time={buffer}
+                    max-size-time=3000000000
                     name=queue-fd-{source}
                 ! srtsink
                     mode=listener

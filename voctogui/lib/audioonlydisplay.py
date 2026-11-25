@@ -21,11 +21,9 @@ class AudioOnlyDisplay(object):
 
         # Setup Server-Connection, Demuxing and Decoding
         pipe = """
-            tcpclientsrc
+            srtsrc
                 name=tcpsrc-{name}
-                host={host}
-                port={port}
-                blocksize=1048576
+                uri="srt://{host}:{port}" latency=10
             ! matroskademux
                 name=demux-{name}
                 """.format(name=name,
@@ -34,7 +32,10 @@ class AudioOnlyDisplay(object):
 
         # add an Audio-Path through a level-Element
         pipe += """
-            demux-{name}.
+            demux-{name}.video_0
+            ! fakesink
+        
+            demux-{name}.audio_0
             ! queue
                 name=queue-audio-{name}
             ! level
