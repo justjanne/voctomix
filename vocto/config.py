@@ -453,6 +453,9 @@ class VocConfigParser(ConfigParser):
     def getPreviewsEnabled(self) -> bool:
         return self.getboolean('previews', 'enabled', fallback=False)
 
+    def getStreamsEnabled(self) -> bool:
+        return self.getboolean('streams', 'enabled', fallback=False)
+
     def getAVRawOutputEnabled(self) -> bool:
         return self.getboolean('avrawoutput', 'enabled', fallback=True)
 
@@ -484,6 +487,9 @@ class VocConfigParser(ConfigParser):
         else:
             self.log.warning("configuration attribute 'preview/live' is set but blinder is not in use!")
             return []
+
+    def getStreamSources(self) -> list[str]:
+        return self.getList('streams', 'sources')
 
     def getComposites(self) -> dict[str, Composite]:
         return Composites.configure(self.items('composites'), self.getVideoResolution())

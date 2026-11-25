@@ -53,19 +53,20 @@ def construct_video_encoder_pipeline(config: VocConfigParser, section: str) -> s
     pipeline = ""
 
     if encoder == 'vaapi':
-        if codec not in vaapi_encoders:
-            log.error("Unknown codec '{}' for video encoder '{}'. Falling back to 'h264'.".format(codec, encoder))
+        encoder = config.getVaCoreElement(codec) or vaapi_encoders[codec]
+        if not encoder:
+            log.error("Unknown codec '{}' for video encoder '{}'.".format(codec, encoder))
             sys.exit(-1)
         # generate pipeline
         # we can also force a video format here (format=I420) but this breaks scalling at least on Intel HD3000 therefore it currently removed
         pipeline = """  ! capsfilter
                             caps=video/x-raw,interlace-mode=progressive
                         ! {encoder}
-                        """.format(encoder=config.getVaCoreElement(codec) or vaapi_encoders[codec])
+                        """.format(encoder=encoder)
 
     elif encoder == 'v4l2':
         if codec not in v4l2_encoders:
-            log.error("Unknown codec '{}' for video encoder '{}'. Falling back to 'h264'.".format(codec, encoder))
+            log.error("Unknown codec '{}' for video encoder '{}'.".format(codec, encoder))
             sys.exit(-1)
         pipeline = """  ! capsfilter
                             caps=video/x-raw,interlace-mode=progressive
@@ -97,13 +98,10 @@ def construct_video_encoder_pipeline(config: VocConfigParser, section: str) -> s
     pipeline += """! {vcaps}
                 """.format(vcaps=vcaps)
 
-    match codec:
-        case "h264":
-            pipeline += """! h264parse"""
-        case "h265":
-            pipeline += """! h265parse"""
-        case _:
-            pass
+    if codec.startswith("h264"):
+        pipeline += """! h264parse"""
+    elif codec.startswith("h265"):
+        pipeline += """! h265parse"""
 
     return pipeline
 

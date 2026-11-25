@@ -9,6 +9,7 @@ from voctocore.lib.args import Args
 from voctocore.lib.audiomix import AudioMix
 from voctocore.lib.avnode import AVNode, AVIONode
 from voctocore.lib.avpreviewoutput import AVPreviewOutput
+from voctocore.lib.avstreamoutput import AVStreamOutput
 from voctocore.lib.avrawoutput import AVRawOutput
 from voctocore.lib.blinder import Blinder
 from voctocore.lib.clock import Clock
@@ -107,6 +108,12 @@ class Pipeline(object):
             dest = AVPreviewOutput('mix', Port.MIX_PREVIEW, use_audio_mix=True)
             self.bins.append(dest)
             self.ports.append(Port('preview-mix', dest))
+
+        if Config.getStreamsEnabled():
+            for idx, livesource in enumerate(Config.getStreamSources()):
+                dest = AVStreamOutput(livesource, Port.LIVE_STREAM+idx, use_audio_mix=True, audio_blinded=True)
+                self.bins.append(dest)
+                self.ports.append(Port('stream-{}'.format(livesource), dest))
 
         # create blinding sources and mixer
         if Config.getBlinderEnabled():

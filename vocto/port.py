@@ -14,6 +14,7 @@ class Port(object):
     OUT = 2
 
     OFFSET_PREVIEW = 100
+    OFFSET_STREAM = 200
     # core listening port
     CORE_LISTENING = 9999
     # input ports
@@ -25,10 +26,12 @@ class Port(object):
     # output ports
     MIX_OUT = 11000
     MIX_PREVIEW = MIX_OUT+OFFSET_PREVIEW
+    MIX_STREAM = MIX_OUT+OFFSET_STREAM
     SOURCES_OUT = 13000
     SOURCES_PREVIEW = SOURCES_OUT+OFFSET_PREVIEW
     LIVE_OUT = 15000
     LIVE_PREVIEW = LIVE_OUT+OFFSET_PREVIEW
+    LIVE_STREAM = LIVE_OUT+OFFSET_STREAM
     LOCALPLAYOUT_OUT = 19000
 
     name: str
